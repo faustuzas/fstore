@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+package raftpb;
+
+option go_package = "./raft/raftpb";
+
+option (gogoproto.goproto_enum_prefix_all) = false;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+// PersistentState holds the state of the raft node which has to be persisted according to Raft paper
+message PersistentState {
+  // Term is the current term of the raft node
+  uint64 term = 1;
+
+  // VotedFor holds the node id for which the node voted in Term
+  uint64 votedFor = 2;
+}
+
+// MessageType describes which type the message is. The type invokes different operations in the Raft state machine
+enum MessageType {
+  MsgTick = 0;
+  MsgCampaign = 1;
+  MsgVote = 2;
+  MsgVoteRes = 3;
+  MsgApp = 4;
+  MsgAppRes = 5;
+  MsgPropose = 6;
+}
+
+// Message is an input to the Raft state machine. It is a holder of all relevant state
+// that nodes would need to communicate to each other and internally invoke processes
+message Message {
+  // Type describes which type the message is. The type invokes different operations in the Raft state machine
+  MessageType type = 1;
+
+  // From describes who is the initiator of this message
+  uint64 from = 2;
+  // To describes to whom the message should be delivered
+  uint64 to = 3;
+
+  uint64 term = 4;
+  uint64 logIndex = 5;
+  uint64 logTerm = 6;
+  bool   reject = 7;
+  // TODO: add rejection hints to optimise
+
+  repeated Entry entries = 8 [(gogoproto.nullable) = false];
+  uint64 commitIndex = 9;
+}
+
+message Entry {
+  uint64 term = 1;
+  uint64 index = 2;
+  bytes  data = 3;
+}
