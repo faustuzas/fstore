@@ -108,11 +108,21 @@ func (n *DBNode) dbSetKey(ctx context.Context, key, value string) error {
 }
 
 func (n *DBNode) runRaftProcess() {
+	var prevHardState pb.PersistentState
+
 	for {
 		select {
 		case progress := <-n.RaftNode.Progress():
-			n.RaftMemoryStorage.SetState(progress.HardState)
-			n.RaftMemoryStorage.Append(progress.EntriesToPersist...)
+			if !raft.ArePersistentStatesEqual(prevHardState, progress.HardState) {
+				if err := n.RaftMemoryStorage.SetState(progress.HardState); err != nil {
+					panic(err)
+				}
+				prevHardState = progress.HardState
+			}
+
+			if err := n.RaftMemoryStorage.Append(progress.EntriesToPersist...); err != nil {
+				panic(err)
+			}
 
 			n.RaftTransport.Send(progress.Messages...)
 

@@ -199,7 +199,7 @@ func TestArePersistentStatesEqual(t *testing.T) {
 
 	for _, tt := range ttable {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expectEquals, arePersistentStatesEqual(tt.a, tt.b))
+			require.Equal(t, tt.expectEquals, ArePersistentStatesEqual(tt.a, tt.b))
 		})
 	}
 }
@@ -242,7 +242,7 @@ func TestAreSoftStatesEqual(t *testing.T) {
 
 	for _, tt := range ttable {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expectEquals, areSoftStatesEqual(tt.a, tt.b))
+			require.Equal(t, tt.expectEquals, AreSoftStatesEqual(tt.a, tt.b))
 		})
 	}
 }

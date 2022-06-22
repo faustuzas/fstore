@@ -67,12 +67,12 @@ func newRawNode(params Params) (rawNode, error) {
 // hasProgressReady checks whether local raft has any Progress which should be acted upon
 func (n *rawNode) hasProgressReady() bool {
 	// check whether any property of soft state changed since the last accepted Progress
-	if !areSoftStatesEqual(n.prevSoftState, n.r.softState()) {
+	if !AreSoftStatesEqual(n.prevSoftState, n.r.softState()) {
 		return true
 	}
 
 	// check whether any property of hard state changed since the last accepted Progress
-	if !arePersistentStatesEqual(n.prevPersistentState, n.r.persistentState()) {
+	if !ArePersistentStatesEqual(n.prevPersistentState, n.r.persistentState()) {
 		return true
 	}
 
@@ -142,12 +142,12 @@ func (n *rawNode) step(message pb.Message) error {
 	return n.r.step(message)
 }
 
-// arePersistentStatesEqual checks whether two PersistentStates are identical
-func arePersistentStatesEqual(a, b pb.PersistentState) bool {
+// ArePersistentStatesEqual checks whether two PersistentStates are identical
+func ArePersistentStatesEqual(a, b pb.PersistentState) bool {
 	return a.Term == b.Term && a.VotedFor == b.VotedFor
 }
 
-// areSoftStatesEqual checks whether two SoftStates are identical
-func areSoftStatesEqual(a, b SoftState) bool {
+// AreSoftStatesEqual checks whether two SoftStates are identical
+func AreSoftStatesEqual(a, b SoftState) bool {
 	return a.Lead == b.Lead && a.Role == b.Role
 }
