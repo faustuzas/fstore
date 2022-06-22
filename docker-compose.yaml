@@ -1,7 +1,22 @@
-version: "3"
+version: "3.7"
 
-#services:
-#  prometheus:
-#
-#  grafana:
-#
+services:
+  prometheus:
+    build:
+      context: ./docker/observability
+      dockerfile: Dockerfile.prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - prom:/prometheus
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana:/var/lib/grafana
+
+volumes:
+  prom:
+  grafana:

@@ -10,7 +10,6 @@ import (
 	"github.com/faustuzas/distributed-kv/storage"
 	"github.com/faustuzas/distributed-kv/util"
 	"os"
-	"runtime"
 	"strconv"
 )
 
@@ -59,7 +58,7 @@ func startNode(id config.ServerId, topology config.Topology) error {
 
 	raftStorage := &raft.MemoryStorage{}
 
-	raftNode := raft.StartNode(raft.Params{
+	raftNode, err := raft.StartNode(raft.Params{
 		ID:                       uint64(id),
 		StateStorage:             raftStorage,
 		LogStorage:               raftStorage,
@@ -68,6 +67,9 @@ func startNode(id config.ServerId, topology config.Topology) error {
 		Peers:                    peers,
 		Logger:                   logging.NewLogger(fmt.Sprintf("raft #%v", id), logging.DefaultLevel),
 	})
+	if err != nil {
+		return fmt.Errorf("starting raft node: %w", err)
+	}
 
 	db := &node.DBNode{
 		Config:            topology.Servers[id],
@@ -103,8 +105,6 @@ func startNode(id config.ServerId, topology config.Topology) error {
 }
 
 func main() {
-	runtime.SetBlockProfileRate(1)
-
 	var idStr = "1"
 	if len(os.Args) > 1 {
 		idStr = os.Args[1]

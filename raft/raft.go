@@ -482,6 +482,7 @@ func (r *raft) startCampaign() error {
 		if err := r.becomeLeader(); err != nil {
 			return fmt.Errorf("becoming a single node cluster leader: %w", err)
 		}
+		r.logger.Infof("becoming a leader for single node cluster at term %v", r.term)
 		return nil
 	}
 
