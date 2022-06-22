@@ -13,6 +13,14 @@ type StateStorage interface {
 	State() (pb.PersistentState, bool, error)
 }
 
+// MutableStateStorage is an extension to StateStorage which provides mutating operations too
+type MutableStateStorage interface {
+	StateStorage
+
+	// SetState persists the state
+	SetState(state pb.PersistentState) error
+}
+
 // LogStorage provides a way to access already stable entries
 type LogStorage interface {
 
@@ -26,10 +34,18 @@ type LogStorage interface {
 	LastIndex() (uint64, error)
 }
 
+// MutableLogStorage is an extension to LogStorage which provides mutating operations too
+type MutableLogStorage interface {
+	LogStorage
+
+	// Append persist the entries keeping the Raft index continuity and monotonicity invariants in place
+	Append(entries ...pb.Entry) error
+}
+
 // hints to compiler what interfaces have to be implemented
 var (
-	_ LogStorage   = (*MemoryStorage)(nil)
-	_ StateStorage = (*MemoryStorage)(nil)
+	_ MutableLogStorage   = (*MemoryStorage)(nil)
+	_ MutableStateStorage = (*MemoryStorage)(nil)
 )
 
 // MemoryStorage implements both types of Storage and holds everything in memory,
@@ -53,11 +69,12 @@ func (s *MemoryStorage) State() (pb.PersistentState, bool, error) {
 	return *s.state, true, nil
 }
 
-func (s *MemoryStorage) SetState(state pb.PersistentState) {
+func (s *MemoryStorage) SetState(state pb.PersistentState) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.state = &state
+	return nil
 }
 
 func (s *MemoryStorage) Entries(startIdx, endIdx uint64) ([]pb.Entry, error) {
@@ -91,9 +108,9 @@ func (s *MemoryStorage) LastIndex() (uint64, error) {
 	return s.entries[len(s.entries)-1].Index, nil
 }
 
-func (s *MemoryStorage) Append(entries ...pb.Entry) {
+func (s *MemoryStorage) Append(entries ...pb.Entry) error {
 	if len(entries) == 0 {
-		return
+		return nil
 	}
 
 	s.mu.Lock()
@@ -101,7 +118,7 @@ func (s *MemoryStorage) Append(entries ...pb.Entry) {
 
 	if len(s.entries) == 0 {
 		s.entries = append(s.entries, entries...)
-		return
+		return nil
 	}
 
 	// check whether there are log entries which have to be overridden because of leadership change. The algorithm goes
@@ -125,4 +142,6 @@ func (s *MemoryStorage) Append(entries ...pb.Entry) {
 	} else {
 		panic("missing entries in the log")
 	}
+
+	return nil
 }
