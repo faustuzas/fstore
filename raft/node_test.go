@@ -119,6 +119,20 @@ func TestNodePropose(t *testing.T) {
 	})
 }
 
+func TestNodeCampaign(t *testing.T) {
+	t.Run("should_send_campaign_message", func(t *testing.T) {
+		n := node{receiveCh: make(chan pb.Message, 1)}
+
+		err := n.Campaign()
+		require.NoError(t, err)
+
+		withNoBlockCheck(t, func() {
+			msg := <-n.receiveCh
+			require.Equal(t, pb.Message{Type: pb.MsgCampaign}, msg)
+		})
+	})
+}
+
 func TestNodeStop(t *testing.T) {
 	t.Run("should_close_required_channels", func(t *testing.T) {
 		n := startDefaultNode()

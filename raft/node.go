@@ -36,6 +36,9 @@ type Node interface {
 	// Tick moves the internal raft node's logical clock forward
 	Tick()
 
+	// Campaign starts a premature campaign for this node
+	Campaign() error
+
 	// Stop signals to the raft node that it has to stopCh and blocks until it has doneCh so
 	Stop()
 }
@@ -148,6 +151,10 @@ func (n *node) Tick() {
 	default:
 		n.log.Warnf("Ticks are shed because they are not consumed. Node is probably overloaded...")
 	}
+}
+
+func (n *node) Campaign() error {
+	return n.Step(context.Background(), pb.Message{Type: pb.MsgCampaign})
 }
 
 func (n *node) Stop() {
