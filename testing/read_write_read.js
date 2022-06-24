@@ -10,6 +10,7 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 // export const options = {
 //     vus: 10,
 //     duration: '5m',
+//     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
 // };
 
 export const options = {

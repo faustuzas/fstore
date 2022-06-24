@@ -2,8 +2,11 @@ package node
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/faustuzas/distributed-kv/config"
 	"github.com/faustuzas/distributed-kv/logging"
 	"github.com/faustuzas/distributed-kv/raft"
@@ -11,10 +14,6 @@ import (
 	"github.com/faustuzas/distributed-kv/raft/transport"
 	"github.com/faustuzas/distributed-kv/storage"
 	"github.com/gorilla/mux"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"time"
 )
 
 var _ transport.Raft = (*DBNode)(nil)
@@ -35,7 +34,8 @@ type DBNode struct {
 	RaftTransport     transport.Transport
 	RaftMemoryStorage *raft.MemoryStorage
 
-	Logger logging.Logger
+	Logger  logging.Logger
+	Metrics *Metrics
 
 	httpSrv  *http.Server
 	listener net.Listener
@@ -74,111 +74,16 @@ func (n *DBNode) Process(ctx context.Context, msg pb.Message) error {
 }
 
 func (n *DBNode) Stop() {
-
-}
-
-func (n *DBNode) dbGetKey(ctx context.Context, key string) (string, error) {
-	return n.Storage.Get(ctx, key)
-}
-
-func (n *DBNode) dbSetKey(ctx context.Context, key, value string) error {
-	req := RaftRequest{
-		ID:    n.reqIdGen.Next(),
-		Key:   key,
-		Value: value,
-	}
-
-	bytes, err := json.Marshal(req)
-	if err != nil {
-		return fmt.Errorf("serialising request: %w", err)
-	}
-
-	ch := n.reqWaiter.Register(req.ID)
-
-	if err = n.RaftNode.Propose(ctx, bytes); err != nil {
-		return fmt.Errorf("proposing value: %w", err)
-	}
-
-	select {
-	case <-ch:
-		return nil
-	case <-ctx.Done():
-		return fmt.Errorf("waiting for request to finish: %w", ctx.Err())
-	}
-}
-
-func (n *DBNode) runRaftProcess() {
-	var prevHardState pb.PersistentState
-
-	for {
-		select {
-		case progress := <-n.RaftNode.Progress():
-			if !raft.ArePersistentStatesEqual(prevHardState, progress.HardState) {
-				if err := n.RaftMemoryStorage.SetState(progress.HardState); err != nil {
-					panic(err)
-				}
-				prevHardState = progress.HardState
-			}
-
-			if err := n.RaftMemoryStorage.Append(progress.EntriesToPersist...); err != nil {
-				panic(err)
-			}
-
-			n.RaftTransport.Send(progress.Messages...)
-
-			n.RaftNode.Advance()
-
-			for _, entry := range progress.EntriesToApply {
-				var req RaftRequest
-				_ = json.Unmarshal(entry.Data, &req)
-
-				_ = n.Storage.Set(context.Background(), req.Key, req.Value)
-				n.reqWaiter.Trigger(req.ID, req)
-			}
-		}
-	}
+	// TODO: implement
 }
 
 func (n *DBNode) createServer() (*http.Server, net.Listener, error) {
 	router := mux.NewRouter()
 	router.Handle("/raft", n.RaftTransport.Handler())
 
-	attachProfiler(router)
-
-	router.HandleFunc("/admin/snapshot", func(w http.ResponseWriter, r *http.Request) {
-		snapshot, _ := n.Storage.Snapshot(context.Background())
-		_, _ = w.Write([]byte(snapshot))
-	}).Methods("GET")
-
-	router.HandleFunc("/v1/{key}", func(w http.ResponseWriter, r *http.Request) {
-		key := mux.Vars(r)["key"]
-
-		val, err := n.dbGetKey(r.Context(), key)
-		if err == storage.ErrNotFound {
-			w.WriteHeader(404)
-			return
-		} else if err != nil {
-			w.WriteHeader(500)
-			_, _ = w.Write([]byte(err.Error()))
-			return
-		}
-
-		_, _ = w.Write([]byte(val))
-	}).Methods("GET")
-
-	router.HandleFunc("/v1/{key}", func(w http.ResponseWriter, r *http.Request) {
-		key := mux.Vars(r)["key"]
-		val, _ := ioutil.ReadAll(r.Body)
-
-		n.Logger.Debugf("User request: SET %v -> %v", key, val)
-		if err := n.dbSetKey(r.Context(), key, string(val)); err != nil {
-			w.WriteHeader(500)
-			_, _ = w.Write([]byte(err.Error()))
-			return
-		}
-
-		_, _ = w.Write([]byte("ok"))
-	}).Methods("POST")
+	n.addObservabilityEndpoints(router)
+	n.addAdminEndpoints(router)
+	n.addDBEndpoints(router)
 
 	l, err := net.Listen("tcp", n.Config.HttpAddress())
 	if err != nil {

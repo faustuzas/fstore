@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/faustuzas/distributed-kv/config"
 	"github.com/faustuzas/distributed-kv/logging"
 	"github.com/faustuzas/distributed-kv/node"
@@ -9,8 +12,7 @@ import (
 	"github.com/faustuzas/distributed-kv/raft/transport"
 	"github.com/faustuzas/distributed-kv/storage"
 	"github.com/faustuzas/distributed-kv/util"
-	"os"
-	"strconv"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func runAll() error {
@@ -77,11 +79,14 @@ func startNode(id config.ServerId, topology config.Topology) error {
 		RaftNode:          raftNode,
 		RaftMemoryStorage: raftStorage,
 		Logger:            logging.NewLogger(fmt.Sprintf("node #%v", id), logging.DefaultLevel),
+		Metrics:           node.NewMetrics(prometheus.DefaultRegisterer),
 	}
 
 	db.RaftTransport = &transport.HttpTransport{
-		Raft:   db,
-		Logger: logging.NewLogger(fmt.Sprintf("server #%v", id), logging.DefaultLevel),
+		Raft:    db,
+		Logger:  logging.NewLogger(fmt.Sprintf("server #%v", id), logging.DefaultLevel),
+		Encoder: transport.NewProtobufEncoder(),
+		Metrics: transport.NewMetrics(prometheus.DefaultRegisterer),
 	}
 	if err = db.RaftTransport.Start(); err != nil {
 		return fmt.Errorf("starting raft transport: %w", err)
@@ -104,6 +109,7 @@ func startNode(id config.ServerId, topology config.Topology) error {
 	return nil
 }
 
+// curl -X POST http://localhost:8001/raft/admin/campaign
 func main() {
 	var idStr = "1"
 	if len(os.Args) > 1 {

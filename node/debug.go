@@ -7,7 +7,7 @@ import (
 	_ "net/http/pprof"
 )
 
-func attachProfiler(router *mux.Router) {
+func (n *DBNode) addObservabilityEndpoints(router *mux.Router) {
 	// attaches all required endpoints
 	router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
