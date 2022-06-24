@@ -55,7 +55,7 @@ func startNode(id config.ServerId, topology config.Topology) error {
 
 	dbStorage, err := storage.CreateStorage(storage.Params{})
 	if err != nil {
-		return fmt.Errorf("creating storage: %w", dbStorage)
+		return fmt.Errorf("creating storage: %w", err)
 	}
 
 	raftStorage := &raft.MemoryStorage{}
