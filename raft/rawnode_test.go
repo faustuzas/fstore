@@ -51,7 +51,7 @@ func TestHasProgressReady(t *testing.T) {
 		rn.r.raftLog = &raftLog{
 			appliedIndex: 0,
 			commitIndex:  1,
-			stableLog:    &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}}},
+			stableLog:    newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}}),
 			unstable:     newUnstableLogFromEntries(),
 		}
 
@@ -92,7 +92,7 @@ func TestHasProgressReady(t *testing.T) {
 		rn.r.raftLog = &raftLog{
 			appliedIndex: 1,
 			commitIndex:  1,
-			stableLog:    &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}}},
+			stableLog:    newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}}),
 			unstable:     newUnstableLogFromEntries(),
 		}
 
@@ -112,7 +112,7 @@ func TestCollectProgress(t *testing.T) {
 	rn.r.raftLog = &raftLog{
 		appliedIndex: 1,
 		commitIndex:  2,
-		stableLog:    &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}}},
+		stableLog:    newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}}),
 		unstable:     newUnstableLogFromEntries(pb.Entry{Term: 2, Index: 3}),
 	}
 
@@ -146,7 +146,7 @@ func TestAckProgress(t *testing.T) {
 func TestAdvance(t *testing.T) {
 	rn := newEmptyRawNode()
 	rn.r.raftLog = &raftLog{
-		stableLog:    &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}}},
+		stableLog:    newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}}),
 		unstable:     newUnstableLogFromEntries([]pb.Entry{{Term: 1, Index: 3}, {Term: 1, Index: 4}}...),
 		commitIndex:  3,
 		appliedIndex: 0,
@@ -250,8 +250,8 @@ func TestAreSoftStatesEqual(t *testing.T) {
 func TestNewRawNode(t *testing.T) {
 	params := Params{
 		ID:                       5,
-		StateStorage:             &MemoryStorage{state: &pb.PersistentState{Term: 4, VotedFor: 11}},
-		LogStorage:               &MemoryStorage{},
+		StateStorage:             newInMemoryStorageWithState(&pb.PersistentState{Term: 4, VotedFor: 11}),
+		LogStorage:               newInMemoryStorage(nil),
 		MaxLeaderElectionTimeout: 10,
 		HeartBeatTimeout:         3,
 		Peers:                    nil,
@@ -283,8 +283,8 @@ func TestNewRawNode(t *testing.T) {
 func TestPropose(t *testing.T) {
 	params := Params{
 		ID:                       5,
-		StateStorage:             &MemoryStorage{state: &pb.PersistentState{Term: 5, VotedFor: None}},
-		LogStorage:               &MemoryStorage{},
+		StateStorage:             newInMemoryStorageWithState(&pb.PersistentState{Term: 5, VotedFor: None}),
+		LogStorage:               newInMemoryStorage(nil),
 		MaxLeaderElectionTimeout: 5,
 		HeartBeatTimeout:         3,
 		Peers:                    nil,
@@ -314,8 +314,8 @@ func TestPropose(t *testing.T) {
 func TestStep(t *testing.T) {
 	params := Params{
 		ID:                       5,
-		StateStorage:             &MemoryStorage{state: &pb.PersistentState{Term: 5, VotedFor: None}},
-		LogStorage:               &MemoryStorage{},
+		StateStorage:             newInMemoryStorageWithState(&pb.PersistentState{Term: 5, VotedFor: None}),
+		LogStorage:               newInMemoryStorage(nil),
 		MaxLeaderElectionTimeout: 5,
 		HeartBeatTimeout:         3,
 		Peers:                    nil,

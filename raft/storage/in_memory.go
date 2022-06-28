@@ -1,4 +1,4 @@
-package raft
+package storage
 
 import (
 	"sync"
@@ -6,59 +6,23 @@ import (
 	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
 )
 
-// StateStorage provides a way to access last persisted state of the node
-type StateStorage interface {
-
-	// State tries to return the last persisted state and a flag indicating whether there was one persisted at all
-	State() (pb.PersistentState, bool, error)
-}
-
-// MutableStateStorage is an extension to StateStorage which provides mutating operations too
-type MutableStateStorage interface {
-	StateStorage
-
-	// SetState persists the state
-	SetState(state pb.PersistentState) error
-}
-
-// LogStorage provides a way to access already stable entries
-type LogStorage interface {
-
-	// Entries returns a slice of persisted raft log entries in the range [startIdx, endIdx)
-	Entries(startIdx, endIdx uint64) ([]pb.Entry, error)
-
-	// Term returns the term of the log entry at the raft log idx
-	Term(idx uint64) (uint64, error)
-
-	// LastIndex returns the raft index of the last entry in the log
-	LastIndex() (uint64, error)
-}
-
-// MutableLogStorage is an extension to LogStorage which provides mutating operations too
-type MutableLogStorage interface {
-	LogStorage
-
-	// Append persist the entries keeping the Raft index continuity and monotonicity invariants in place
-	Append(entries ...pb.Entry) error
-}
-
 // hints to compiler what interfaces have to be implemented
 var (
-	_ MutableLogStorage   = (*MemoryStorage)(nil)
-	_ MutableStateStorage = (*MemoryStorage)(nil)
+	_ MutableLogStorage   = (*InMemory)(nil)
+	_ MutableStateStorage = (*InMemory)(nil)
 )
 
-// MemoryStorage implements both types of Storage and holds everything in memory,
+// InMemory implements both types of Storage and holds everything in memory,
 // so should not be used as durable implementation of Storage interfaces.
 // However, if the dataset is small it can be backed by simple WAL and function as a proper storage
-type MemoryStorage struct {
+type InMemory struct {
 	mu sync.RWMutex
 
 	entries []pb.Entry
 	state   *pb.PersistentState
 }
 
-func (s *MemoryStorage) State() (pb.PersistentState, bool, error) {
+func (s *InMemory) State() (pb.PersistentState, bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -69,7 +33,7 @@ func (s *MemoryStorage) State() (pb.PersistentState, bool, error) {
 	return *s.state, true, nil
 }
 
-func (s *MemoryStorage) SetState(state pb.PersistentState) error {
+func (s *InMemory) SetState(state pb.PersistentState) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -77,7 +41,7 @@ func (s *MemoryStorage) SetState(state pb.PersistentState) error {
 	return nil
 }
 
-func (s *MemoryStorage) Entries(startIdx, endIdx uint64) ([]pb.Entry, error) {
+func (s *InMemory) Entries(startIdx, endIdx uint64) ([]pb.Entry, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -85,7 +49,7 @@ func (s *MemoryStorage) Entries(startIdx, endIdx uint64) ([]pb.Entry, error) {
 	return s.entries[startIdx-1 : endIdx-1], nil
 }
 
-func (s *MemoryStorage) Term(idx uint64) (uint64, error) {
+func (s *InMemory) Term(idx uint64) (uint64, error) {
 	if idx == 0 {
 		return 0, nil
 	}
@@ -97,7 +61,7 @@ func (s *MemoryStorage) Term(idx uint64) (uint64, error) {
 	return s.entries[idx-1].Term, nil
 }
 
-func (s *MemoryStorage) LastIndex() (uint64, error) {
+func (s *InMemory) LastIndex() (uint64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -108,7 +72,7 @@ func (s *MemoryStorage) LastIndex() (uint64, error) {
 	return s.entries[len(s.entries)-1].Index, nil
 }
 
-func (s *MemoryStorage) Append(entries ...pb.Entry) error {
+func (s *InMemory) Append(entries ...pb.Entry) error {
 	if len(entries) == 0 {
 		return nil
 	}

@@ -2,10 +2,12 @@ package raft
 
 import (
 	"fmt"
+	"math/rand"
+
 	"github.com/faustuzas/distributed-kv/logging"
 	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	"github.com/faustuzas/distributed-kv/raft/storage"
 	"github.com/faustuzas/distributed-kv/util"
-	"math/rand"
 )
 
 var (
@@ -43,10 +45,10 @@ type Params struct {
 	ID uint64
 
 	// StateStorage should provide a way to access last persisted state of the node
-	StateStorage StateStorage
+	StateStorage storage.StateStorage
 
 	// LogStorage should provide a way to access already stable entries
-	LogStorage LogStorage
+	LogStorage storage.LogStorage
 
 	// MaxLeaderElectionTimeout defines the maximum timeout for leader election in ticks. The real timeout
 	// will be randomly calculated from range [MaxLeaderElectionTimeout / 2, MaxLeaderElectionTimeout]

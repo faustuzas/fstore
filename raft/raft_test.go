@@ -2,6 +2,7 @@ package raft
 
 import (
 	"fmt"
+	"github.com/faustuzas/distributed-kv/raft/storage"
 	"testing"
 
 	"github.com/faustuzas/distributed-kv/logging"
@@ -79,9 +80,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("candidate_sends_vote_requests_to_all_peers_in_the_cluster", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Index: 1, Term: 2}, {Index: 2, Term: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Index: 1, Term: 2}, {Index: 2, Term: 3}})
 
 		r := createRaft(log)
 		r.peers = []uint64{10, 11}
@@ -165,9 +164,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("node_rejects_the_vote_if_candidates_last_log_entry_term_is_smaller", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(2, 10)
@@ -185,9 +182,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("node_rejects_the_vote_if_candidates_last_log_entry_index_is_smaller", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(2, 10)
@@ -205,9 +200,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("node_rejects_the_vote_if_it_has_already_voted_in_that_term", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}})
 
 		r := createRaft(log)
 		r.term = 2
@@ -236,9 +229,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("node_accepts_the_vote_from_the_same_node_multiple_times_for_the_same_term", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}})
 
 		r := createRaft(log)
 		r.term = 2
@@ -267,9 +258,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("node_resets_its_leader_election_timeout_when_giving_the_vote_away", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}, {Term: 2, Index: 3}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(2, 10)
@@ -319,9 +308,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("node_votes_for_a_candidate_if_all_conditions_satisfied", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}})
 
 		r := createRaft(log)
 		r.term = 1
@@ -357,9 +344,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("candidate_is_elected_when_quorum_of_votes_is_received", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(1, 5)
@@ -387,9 +372,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("candidate reverts back to follower when it looses election", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(1, 5)
@@ -418,9 +401,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leaders_does_all_required_actions_on_won_election", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}})
 
 		r := createRaft(log)
 		r.term = 4
@@ -498,9 +479,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("follower_handle_simple_successful_append_request", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}})
 
 		r := createRaft(log)
 		r.term = 4
@@ -566,9 +545,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("follower_rejects_append_request_if_previous_log_index_is_bigger_than_current_log", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(4, 10)
@@ -593,9 +570,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("follower_rejects_append_request_if_previous_log_term_is_not_correct", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 3, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 3, Index: 2}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(4, 10)
@@ -640,9 +615,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("candidate_reverts_to_follower_if_receives_append_in_the_same_term", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}})
 
 		r := createRaft(log)
 		r.peers = []uint64{10, 11}
@@ -704,9 +677,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leader_updates_required_data_on_successful_append_responses_and_broadcasts_new_commit_index", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}})
 
 		r := createRaft(log)
 		r.term = 3
@@ -763,9 +734,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leader_commits_new_entries_only_from_its_own_term", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 2, Index: 1}, {Term: 2, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 2, Index: 1}, {Term: 2, Index: 2}})
 
 		r := createRaft(log)
 		r.term = 4
@@ -819,9 +788,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leader_updates_required_data_on_failed_append_responses_and_sends_another_requests", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}})
 
 		r := createRaft(log)
 		r.term = 3
@@ -916,9 +883,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leader_periodically_broadcasts_heartbeat_appends_to_all_peers", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}})
 
 		r := createRaft(log)
 		r.term = 3
@@ -966,9 +931,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("single_node_cluster_leader_commits_entries_immediately", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}})
 
 		r := createRaft(log)
 		r.term = 3
@@ -996,9 +959,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("part_of_followers_unstable_log_is_overridden_on_leader_change", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(2, 10)
@@ -1035,9 +996,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("whole_followers_unstable_log_is_overridden_on_leader_change", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}})
 
 		r := createRaft(log)
 		_ = r.becomeFollower(2, 10)
@@ -1176,9 +1135,7 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leader_can_handle_multiple_append_rejects", func(t *testing.T) {
-		log := &MemoryStorage{
-			entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}},
-		}
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}})
 
 		r := createRaft(log)
 		r.term = 3
@@ -1247,8 +1204,8 @@ func TestSingleNodeStep(t *testing.T) {
 func TestParamsValidation(t *testing.T) {
 	correctParams := Params{
 		ID:                       4,
-		StateStorage:             &MemoryStorage{},
-		LogStorage:               &MemoryStorage{},
+		StateStorage:             newInMemoryStorage([]pb.Entry{}),
+		LogStorage:               newInMemoryStorage([]pb.Entry{}),
 		MaxLeaderElectionTimeout: 10,
 		HeartBeatTimeout:         2,
 		Peers:                    []uint64{1, 2},
@@ -1347,8 +1304,8 @@ func TestParamsValidation(t *testing.T) {
 func TestCreateRaft(t *testing.T) {
 	params := Params{
 		ID:                       5,
-		StateStorage:             &MemoryStorage{},
-		LogStorage:               &MemoryStorage{},
+		StateStorage:             newInMemoryStorage([]pb.Entry{}),
+		LogStorage:               newInMemoryStorage([]pb.Entry{}),
 		MaxLeaderElectionTimeout: 10,
 		HeartBeatTimeout:         3,
 		Peers:                    []uint64{1, 2, 3},
@@ -1357,7 +1314,7 @@ func TestCreateRaft(t *testing.T) {
 
 	t.Run("default_initial_state_is_set_if_none_is_persisted", func(t *testing.T) {
 		copied := params
-		copied.StateStorage = &MemoryStorage{state: nil}
+		copied.StateStorage = newInMemoryStorage(nil)
 
 		r, err := newRaft(copied)
 		require.NoError(t, err)
@@ -1366,8 +1323,10 @@ func TestCreateRaft(t *testing.T) {
 	})
 
 	t.Run("persisted_initial_state_is_set_if_there_is_one", func(t *testing.T) {
+		s := newInMemoryStorageWithState(&pb.PersistentState{Term: 10, VotedFor: 4})
+
 		copied := params
-		copied.StateStorage = &MemoryStorage{state: &pb.PersistentState{Term: 10, VotedFor: 4}}
+		copied.StateStorage = s
 
 		r, err := newRaft(copied)
 		require.NoError(t, err)
@@ -1398,9 +1357,9 @@ func TestSoftState(t *testing.T) {
 	require.Equal(t, SoftState{Lead: 4, Role: RoleCandidate}, r.softState())
 }
 
-func createRaft(storage LogStorage) *raft {
+func createRaft(storage storage.LogStorage) *raft {
 	if storage == nil {
-		storage = &MemoryStorage{}
+		storage = newInMemoryStorage([]pb.Entry{})
 	}
 
 	log, err := newRaftLog(storage)
@@ -1446,4 +1405,22 @@ func moveInTime(r *raft, ticks int) {
 	for i := 0; i < ticks; i++ {
 		_ = r.step(pb.Message{Type: pb.MsgTick})
 	}
+}
+
+func newInMemoryStorage(entries []pb.Entry) *storage.InMemory {
+	s := &storage.InMemory{}
+	if err := s.Append(entries...); err != nil {
+		panic(err)
+	}
+
+	return s
+}
+
+func newInMemoryStorageWithState(state *pb.PersistentState) *storage.InMemory {
+	s := &storage.InMemory{}
+	if err := s.SetState(*state); err != nil {
+		panic(err)
+	}
+
+	return s
 }

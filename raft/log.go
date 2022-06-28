@@ -2,6 +2,7 @@ package raft
 
 import (
 	"fmt"
+	"github.com/faustuzas/distributed-kv/raft/storage"
 
 	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
 	"github.com/faustuzas/distributed-kv/util"
@@ -11,7 +12,7 @@ import (
 type raftLog struct {
 
 	// stableLog provides a way to access persisted log entries
-	stableLog LogStorage
+	stableLog storage.LogStorage
 
 	// unstable holds a list of entries that have to be persisted with the next Progress
 	// before the messages are sent
@@ -25,7 +26,7 @@ type raftLog struct {
 }
 
 // newRaftLog constructs new instance of raftLog
-func newRaftLog(stableLog LogStorage) (*raftLog, error) {
+func newRaftLog(stableLog storage.LogStorage) (*raftLog, error) {
 	lastIndex, err := stableLog.LastIndex()
 	if err != nil {
 		return nil, fmt.Errorf("getting last lastIndex: %w", err)

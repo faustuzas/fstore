@@ -449,8 +449,8 @@ func TestMain(m *testing.M) {
 func startDefaultNode() *node {
 	n, err := StartNode(Params{
 		ID:                       _localNodeId,
-		StateStorage:             &MemoryStorage{state: &pb.PersistentState{Term: 3, VotedFor: None}},
-		LogStorage:               &MemoryStorage{},
+		StateStorage:             newInMemoryStorageWithState(&pb.PersistentState{Term: 3, VotedFor: None}),
+		LogStorage:               newInMemoryStorage(nil),
 		MaxLeaderElectionTimeout: _testElectionTimeout,
 		HeartBeatTimeout:         _testHeartBeatTimeout,
 		Peers:                    []uint64{10, 11},

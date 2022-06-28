@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewRaftLog(t *testing.T) {
-	log := &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 4, Index: 2}}}
+	log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 4, Index: 2}})
 
 	r, err := newRaftLog(log)
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestRaftLogAccess(t *testing.T) {
 	for _, tt := range ttable {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &raftLog{
-				stableLog: &MemoryStorage{entries: tt.stable},
+				stableLog: newInMemoryStorage(tt.stable),
 				unstable:  newUnstableLogFromEntries(tt.unstable...),
 			}
 
@@ -142,7 +142,7 @@ func TestUnstableEntries(t *testing.T) {
 	t.Run("no_entries", func(t *testing.T) {
 		l := &raftLog{
 			unstable:  unstableLog{entries: nil},
-			stableLog: &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}}},
+			stableLog: newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}}),
 		}
 
 		entries := l.unstableEntries()
@@ -152,7 +152,7 @@ func TestUnstableEntries(t *testing.T) {
 	t.Run("some_entries", func(t *testing.T) {
 		l := &raftLog{
 			unstable:  newUnstableLogFromEntries([]pb.Entry{{Term: 1, Index: 2}, {Term: 3, Index: 4}}...),
-			stableLog: &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}}},
+			stableLog: newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}}),
 		}
 
 		entries := l.unstableEntries()
@@ -165,7 +165,7 @@ func TestAppendEntries(t *testing.T) {
 	t.Run("appending_empty_slice", func(t *testing.T) {
 		l := &raftLog{
 			unstable:  unstableLog{entries: nil},
-			stableLog: &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}}},
+			stableLog: newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}}),
 		}
 
 		lastIndex, _ := l.appendEntries()
@@ -176,7 +176,7 @@ func TestAppendEntries(t *testing.T) {
 	t.Run("appending_new_elements_to_unstable_log", func(t *testing.T) {
 		l := &raftLog{
 			unstable:  newUnstableLog(nil, 3),
-			stableLog: &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}}},
+			stableLog: newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 2, Index: 2}}),
 		}
 
 		lastIndex, _ := l.appendEntries(pb.Entry{Term: 2, Index: 3})
@@ -237,7 +237,7 @@ func TestEntryTerm(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &raftLog{
 				unstable:  newUnstableLogFromEntries(tt.unstable...),
-				stableLog: &MemoryStorage{entries: tt.stable},
+				stableLog: newInMemoryStorage(tt.stable),
 			}
 
 			term, _ := l.term(tt.index)
@@ -319,7 +319,7 @@ func TestSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &raftLog{
 				unstable:  newUnstableLogFromEntries(unstableEntries...),
-				stableLog: &MemoryStorage{entries: stableEntries},
+				stableLog: newInMemoryStorage(stableEntries),
 			}
 
 			slice, _ := l.slice(tt.startIdx, tt.endIdx)
@@ -372,7 +372,7 @@ func TestEntriesFrom(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &raftLog{
 				unstable:  newUnstableLogFromEntries(unstableEntries...),
-				stableLog: &MemoryStorage{entries: stableEntries},
+				stableLog: newInMemoryStorage(stableEntries),
 			}
 
 			slice, _ := l.entriesFrom(tt.fromIdx)
@@ -426,7 +426,7 @@ func TestAllEntries(t *testing.T) {
 
 			l := &raftLog{
 				unstable:  newUnstableLog(tt.unstableEntries, offset),
-				stableLog: &MemoryStorage{entries: tt.stableEntries},
+				stableLog: newInMemoryStorage(tt.stableEntries),
 			}
 
 			entries, _ := l.allEntries()
@@ -439,7 +439,7 @@ func TestTryToAppend(t *testing.T) {
 	t.Run("append_first_ever_entry", func(t *testing.T) {
 		l := &raftLog{
 			unstable:  newUnstableLogFromEntries(),
-			stableLog: &MemoryStorage{entries: nil},
+			stableLog: newInMemoryStorage(nil),
 		}
 
 		lastIndex, ok, _ := l.tryToAppend(0, 0, pb.Entry{Term: 1, Index: 1})
@@ -450,7 +450,7 @@ func TestTryToAppend(t *testing.T) {
 	t.Run("panic_if_conflicting_on_committed_entry", func(t *testing.T) {
 		l := &raftLog{
 			unstable:    newUnstableLogFromEntries(),
-			stableLog:   &MemoryStorage{entries: []pb.Entry{{Index: 1, Term: 2}, {Index: 2, Term: 2}}},
+			stableLog:   newInMemoryStorage([]pb.Entry{{Index: 1, Term: 2}, {Index: 2, Term: 2}}),
 			commitIndex: 2,
 		}
 
@@ -520,7 +520,7 @@ func TestTryToAppend(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &raftLog{
 				unstable:  newUnstableLogFromEntries(initialUnstable...),
-				stableLog: &MemoryStorage{entries: initialStable},
+				stableLog: newInMemoryStorage(initialStable),
 			}
 
 			lastIndex, ok, _ := l.tryToAppend(tt.prevLogTerm, tt.prevLogIndex, tt.entries...)
@@ -547,7 +547,7 @@ func TestCommittedTo(t *testing.T) {
 
 func TestNotAppliedEntries(t *testing.T) {
 	l := &raftLog{
-		stableLog:   &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}, {Term: 1, Index: 3}}},
+		stableLog:   newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}, {Term: 1, Index: 3}}),
 		unstable:    unstableLog{entries: nil, offset: 4},
 		commitIndex: 3,
 	}
@@ -594,7 +594,7 @@ func TestStableToForwarding(t *testing.T) {
 
 func TestAppliedTo(t *testing.T) {
 	l := &raftLog{
-		stableLog:    &MemoryStorage{entries: []pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}, {Term: 1, Index: 3}}},
+		stableLog:    newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}, {Term: 1, Index: 3}}),
 		unstable:     unstableLog{entries: []pb.Entry{{Term: 1, Index: 4}}, offset: 4},
 		commitIndex:  3,
 		appliedIndex: 2,
