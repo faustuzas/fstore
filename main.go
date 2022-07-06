@@ -62,6 +62,7 @@ func startNode(id config.ServerId, topology config.Topology) error {
 	raftStorage, err := raftstorage.NewOnDiskStorage(raftstorage.OnDiskParams{
 		DataDir:      topology.Servers[id].DataDir,
 		Encoder:      raftstorage.NewJsonEncoder(),
+		Metrics:      raftstorage.NewMetrics(prometheus.DefaultRegisterer),
 		MaxBlockSize: 1024 * 1024,
 	})
 	if err != nil {

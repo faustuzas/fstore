@@ -8,15 +8,19 @@ import (
 )
 
 const (
-	labelEndpoint = "endpoint"
+	labelEndpoint  = "endpoint"
+	labelOperation = "operation"
 )
 
-var summariesObjectives = map[float64]float64{0.5: 0.05, 0.99: 0.001, 0.999: 0.0001, 0.9999: 0.00001}
+var summariesObjectives = map[float64]float64{0.5: 0.05, 0.99: 0.001}
 
 type Metrics struct {
 	snapshotRequests prometheus.Summary
 	getValueRequests prometheus.Summary
 	setValueRequests prometheus.Summary
+
+	raftSetState prometheus.Summary
+	raftAppend   prometheus.Summary
 }
 
 func NewMetrics(registerer prometheus.Registerer) *Metrics {
@@ -38,6 +42,17 @@ func NewMetrics(registerer prometheus.Registerer) *Metrics {
 			Objectives:  summariesObjectives,
 			ConstLabels: map[string]string{labelEndpoint: "set_value"},
 		}),
+
+		raftSetState: factory.NewSummary(prometheus.SummaryOpts{
+			Name:        "node_raft_operation",
+			Objectives:  summariesObjectives,
+			ConstLabels: map[string]string{labelOperation: "set_state"},
+		}),
+		raftAppend: factory.NewSummary(prometheus.SummaryOpts{
+			Name:        "node_raft_operation",
+			Objectives:  summariesObjectives,
+			ConstLabels: map[string]string{labelOperation: "append"},
+		}),
 	}
 }
 
@@ -51,6 +66,14 @@ func (m *Metrics) ObserveGetValueRequest(f func()) {
 
 func (m *Metrics) ObserveSetValueRequest(f func()) {
 	observeDuration(m.setValueRequests, f)
+}
+
+func (m *Metrics) ObserveRaftSetState(f func()) {
+	observeDuration(m.raftSetState, f)
+}
+
+func (m *Metrics) ObserveRaftAppend(f func()) {
+	observeDuration(m.raftAppend, f)
 }
 
 func observeDuration(summary prometheus.Summary, f func()) {

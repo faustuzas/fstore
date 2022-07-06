@@ -396,6 +396,7 @@ func (r *raft) stepCandidate(message pb.Message) error {
 func (r *raft) stepLeader(message pb.Message) error {
 	switch message.Type {
 	case pb.MsgAppRes:
+		// TODO: do smarter
 		if message.Reject {
 			// add a safeguard to not go below zero in the case of duplicate rejects
 			r.nextIndex[message.From] = util.MaxUint64(r.nextIndex[message.From]-1, 1)

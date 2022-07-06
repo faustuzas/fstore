@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"io/ioutil"
 	"os"
 	"path"
@@ -16,7 +17,7 @@ func TestDiskStateStorage(t *testing.T) {
 		t: t,
 		factory: func(state *pb.PersistentState) MutableStateStorage {
 			s := &OnDisk{
-				DataDir: os.TempDir(),
+				dataDir: os.TempDir(),
 			}
 
 			if state != nil {
@@ -49,6 +50,7 @@ func TestDiskLogStorage(t *testing.T) {
 			s, err := NewOnDiskStorage(OnDiskParams{
 				DataDir:      dataDir,
 				Encoder:      NewJsonEncoder(),
+				Metrics:      NewMetrics(prometheus.NewRegistry()),
 				MaxBlockSize: 30,
 			})
 			if err != nil {
@@ -91,6 +93,7 @@ func TestOnDiskStorage(t *testing.T) {
 			storage, err := NewOnDiskStorage(OnDiskParams{
 				DataDir:      tmpDir,
 				Encoder:      NewJsonEncoder(),
+				Metrics:      NewMetrics(prometheus.NewRegistry()),
 				MaxBlockSize: 100,
 			})
 			require.NoError(t, err)
@@ -114,6 +117,7 @@ func TestOnDiskStorage(t *testing.T) {
 			storage, err := NewOnDiskStorage(OnDiskParams{
 				DataDir:      tmpDir,
 				Encoder:      NewJsonEncoder(),
+				Metrics:      NewMetrics(prometheus.NewRegistry()),
 				MaxBlockSize: 60,
 			})
 			require.NoError(t, err)
@@ -145,6 +149,7 @@ func TestLogBlock(t *testing.T) {
 			Id:          0,
 			PreviousIdx: 0,
 			Encoder:     NewJsonEncoder(),
+			Metrics:     NewMetrics(prometheus.NewRegistry()),
 			FileName:    path.Join(tmpDir, blockFileName(0)),
 		}
 

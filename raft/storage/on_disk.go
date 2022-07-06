@@ -30,6 +30,7 @@ var (
 type OnDiskParams struct {
 	DataDir      string
 	Encoder      Encoder
+	Metrics      *Metrics
 	MaxBlockSize int
 }
 
@@ -37,8 +38,8 @@ type OnDisk struct {
 	logLock   sync.RWMutex
 	stateLock sync.RWMutex
 
-	DataDir string
-	Log     log
+	dataDir string
+	log     log
 }
 
 // TODO: close stuff!
@@ -53,6 +54,7 @@ func NewOnDiskStorage(params OnDiskParams) (*OnDisk, error) {
 		DataDir:      logDir,
 		MaxBlockSize: params.MaxBlockSize,
 		Encoder:      params.Encoder,
+		Metrics:      params.Metrics,
 	}
 
 	if err := l.LoadBlocksMetadata(); err != nil {
@@ -60,8 +62,8 @@ func NewOnDiskStorage(params OnDiskParams) (*OnDisk, error) {
 	}
 
 	return &OnDisk{
-		DataDir: params.DataDir,
-		Log:     l,
+		dataDir: params.DataDir,
+		log:     l,
 	}, nil
 }
 
@@ -102,14 +104,14 @@ func (s *OnDisk) SetState(state pb.PersistentState) error {
 }
 
 func (s *OnDisk) stateFilePath() string {
-	return path.Join(s.DataDir, _stateFileName)
+	return path.Join(s.dataDir, _stateFileName)
 }
 
 func (s *OnDisk) Entries(startIdx, endIdx uint64) ([]pb.Entry, error) {
 	s.logLock.RLock()
 	defer s.logLock.RUnlock()
 
-	return s.Log.Entries(startIdx, endIdx-1)
+	return s.log.Entries(startIdx, endIdx-1)
 }
 
 func (s *OnDisk) Term(idx uint64) (uint64, error) {
@@ -120,14 +122,14 @@ func (s *OnDisk) Term(idx uint64) (uint64, error) {
 	s.logLock.RLock()
 	defer s.logLock.RUnlock()
 
-	return s.Log.Term(idx)
+	return s.log.Term(idx)
 }
 
 func (s *OnDisk) LastIndex() (uint64, error) {
 	s.logLock.RLock()
 	defer s.logLock.RUnlock()
 
-	return s.Log.lastIndex(), nil
+	return s.log.lastIndex(), nil
 }
 
 func (s *OnDisk) Append(entries ...pb.Entry) error {
@@ -145,20 +147,21 @@ func (s *OnDisk) Append(entries ...pb.Entry) error {
 	//  * truncate everything from there forward
 	//  * append new entries to the end
 
-	lastIndex := s.Log.lastIndex()
+	lastIndex := s.log.lastIndex()
 	if lastIndex != 0 && lastIndex+1 != entries[0].Index {
-		if err := s.Log.TruncateTo(entries[0].Index - 1); err != nil {
+		if err := s.log.TruncateTo(entries[0].Index - 1); err != nil {
 			return fmt.Errorf("truncating log to index %d (last index: %d): %w", entries[0].Index-1, lastIndex, err)
 		}
 	}
 
-	return s.Log.appendEntries(entries...)
+	return s.log.appendEntries(entries...)
 }
 
 type log struct {
 	DataDir      string
 	MaxBlockSize int
 	Encoder      Encoder
+	Metrics      *Metrics
 
 	blocks []*logBlock
 }
@@ -191,23 +194,19 @@ func (l *log) appendEntries(entries ...pb.Entry) error {
 	}
 
 	if block.size > l.MaxBlockSize {
-		newBlock := l.newBlock(block.lastIdx)
+		newBlock := l.newBlock(block.Id+1, block.lastIdx)
 		l.blocks = append(l.blocks, newBlock)
 	}
 
 	return nil
 }
 
-func (l *log) newBlock(previousIndex uint64) *logBlock {
-	blockId := 0
-	if block := l.lastBlock(); block != nil {
-		blockId = block.Id + 1
-	}
-
+func (l *log) newBlock(id int, previousIndex uint64) *logBlock {
 	return &logBlock{
-		Id:          blockId,
+		Id:          id,
 		Encoder:     l.Encoder,
-		FileName:    path.Join(l.DataDir, blockFileName(blockId)),
+		Metrics:     l.Metrics,
+		FileName:    path.Join(l.DataDir, blockFileName(id)),
 		PreviousIdx: previousIndex,
 	}
 }
@@ -230,13 +229,7 @@ func (l *log) LoadBlocksMetadata() error {
 			previousIdx = previousBlock.lastIdx
 		}
 
-		block := &logBlock{
-			Id:          id,
-			PreviousIdx: previousIdx,
-			Encoder:     l.Encoder,
-			FileName:    path.Join(l.DataDir, fileName),
-		}
-
+		block := l.newBlock(id, previousIdx)
 		if err = block.load(); err != nil {
 			return fmt.Errorf("loading block %d: %w", block.Id, err)
 		}
@@ -253,7 +246,7 @@ func (l *log) LoadBlocksMetadata() error {
 
 	// initial block
 	if len(l.blocks) == 0 {
-		l.blocks = append(l.blocks, l.newBlock(0))
+		l.blocks = append(l.blocks, l.newBlock(0, 0))
 	}
 
 	return nil
@@ -354,8 +347,9 @@ type logBlock struct {
 	Id int
 	// PreviousIdx is the last index in the previous block
 	PreviousIdx uint64
-	Encoder     Encoder
 	FileName    string
+	Encoder     Encoder
+	Metrics     *Metrics
 
 	file              *os.File
 	firstIdx, lastIdx uint64
@@ -384,7 +378,7 @@ func (lb *logBlock) AppendEntries(entries ...pb.Entry) error {
 
 		lb.size += entrySize
 		lb.trackIndexes(entry)
-		// TODO: metrics
+		lb.Metrics.RecordBytesWritten(entrySize)
 
 		lb.cachedEntries = append(lb.cachedEntries, entry)
 	}
@@ -426,34 +420,38 @@ func (lb *logBlock) load() error {
 }
 
 func (lb *logBlock) loadEntries() error {
-	_, err := lb.file.Seek(0, io.SeekStart)
-	if err != nil {
-		return fmt.Errorf("seeking to beggining: %w", err)
-	}
-
-	var (
-		dec   = lb.Encoder.Decoder(lb.file)
-		entry pb.Entry
-	)
-	for {
-		has, err := dec.Scan()
+	return lb.Metrics.ObserveBlockLoading(func() error {
+		_, err := lb.file.Seek(0, io.SeekStart)
 		if err != nil {
-			return fmt.Errorf("scanning: %w", err)
+			return fmt.Errorf("seeking to beggining: %w", err)
 		}
 
-		if !has {
-			return nil
-		}
+		var (
+			dec   = lb.Encoder.Decoder(lb.file)
+			entry pb.Entry
+		)
+		for {
+			has, err := dec.Scan()
+			if err != nil {
+				return fmt.Errorf("scanning: %w", err)
+			}
 
-		bytesRead, err := dec.DecodeNext(&entry)
-		for err != nil {
-			return fmt.Errorf("decoding: %w", err)
-		}
+			if !has {
+				return nil
+			}
 
-		lb.size += bytesRead
-		lb.cachedEntries = append(lb.cachedEntries, entry)
-		entry.Reset()
-	}
+			bytesRead, err := dec.DecodeNext(&entry)
+			for err != nil {
+				return fmt.Errorf("decoding: %w", err)
+			}
+
+			lb.size += bytesRead
+			lb.Metrics.RecordBytesRead(bytesRead)
+
+			lb.cachedEntries = append(lb.cachedEntries, entry)
+			entry.Reset()
+		}
+	})
 }
 
 func (lb *logBlock) unload() {

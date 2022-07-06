@@ -40,7 +40,7 @@ func newDuplicateEventsTracker(factory promauto.Factory, receiver string) *dupli
 	return &duplicateEventsTracker{
 		summary: factory.NewSummary(prometheus.SummaryOpts{
 			Name:        "raft_transport_duplicate_append_entries",
-			Objectives:  map[float64]float64{0.5: 0.05, 0.999: 0.0001},
+			Objectives:  map[float64]float64{0.5: 0.05, 0.99: 0.001},
 			ConstLabels: map[string]string{"receiver": receiver},
 		}),
 	}
@@ -59,7 +59,7 @@ func NewMetrics(registerer prometheus.Registerer) *Metrics {
 		}),
 		appendEntries: factory.NewSummary(prometheus.SummaryOpts{
 			Name:       prefix + "append_entries",
-			Objectives: map[float64]float64{0.5: 0.05, 0.999: 0.0001},
+			Objectives: map[float64]float64{0.5: 0.05, 0.99: 0.001},
 		}),
 		duplicateAppends: map[uint64]*duplicateEventsTracker{
 			1: newDuplicateEventsTracker(factory, "1"),

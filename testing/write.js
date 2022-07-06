@@ -27,8 +27,8 @@ export default function () {
 
     const writeRes = http.post(url, value)
     check(writeRes, { 'status should be 200 on write': (r) => r.status === 200 });
-    //
-    // sleep(0.5)
+
+    // sleep(1)
 }
 
 // SCENARIO #1: Running in memory single-node store
@@ -90,3 +90,23 @@ export default function () {
 // iterations.....................: 46832   1558.535294/s
 // vus............................: 100     min=100       max=100
 // vus_max........................: 100     min=100       max=100
+
+// SCENARIO #3: Running 3-nodes cluster with disk based raft log using json for encoding
+// running (0m30.5s), 000/100 VUs, 1213 complete and 0 interrupted iterations
+// checks.........................: 100.00% ✓ 1213      ✗ 0
+// data_received..................: 143 kB  4.7 kB/s
+// data_sent......................: 451 kB  15 kB/s
+// http_req_blocked...............: avg=1.36ms  min=1µs      med=3µs   max=29.93ms p(95)=15.52ms  p(99)=21.88ms  p(99.99)=29.64ms  count=1213
+// http_req_connecting............: avg=1.35ms  min=0s       med=0s    max=27.44ms p(95)=15.45ms  p(99)=21.82ms  p(99.99)=27.03ms  count=1213
+// http_req_duration..............: avg=2.49s   min=255.06ms med=2.49s max=4.6s    p(95)=3.63s    p(99)=4.44s    p(99.99)=4.6s     count=1213
+// { expected_response:true }...: avg=2.49s   min=255.06ms med=2.49s max=4.6s    p(95)=3.63s    p(99)=4.44s    p(99.99)=4.6s     count=1213
+// http_req_failed................: 0.00%   ✓ 0         ✗ 1213
+// http_req_receiving.............: avg=60.44µs min=24µs     med=53µs  max=390µs   p(95)=114.39µs p(99)=158.63µs p(99.99)=373.27µs count=1213
+// http_req_sending...............: avg=62.12µs min=8µs      med=20µs  max=10.68ms p(95)=115µs    p(99)=1.11ms   p(99.99)=9.88ms   count=1213
+// http_req_tls_handshaking.......: avg=0s      min=0s       med=0s    max=0s      p(95)=0s       p(99)=0s       p(99.99)=0s       count=1213
+// http_req_waiting...............: avg=2.49s   min=254.85ms med=2.49s max=4.6s    p(95)=3.63s    p(99)=4.44s    p(99.99)=4.6s     count=1213
+// http_reqs......................: 1213    39.751987/s
+// iteration_duration.............: avg=2.49s   min=258.56ms med=2.49s max=4.63s   p(95)=3.63s    p(99)=4.46s    p(99.99)=4.62s    count=1213
+// iterations.....................: 1213    39.751987/s
+// vus............................: 100     min=100     max=100
+// vus_max........................: 100     min=100     max=100

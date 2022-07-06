@@ -13,14 +13,22 @@ func (n *DBNode) runRaftProcess() {
 	for {
 		select {
 		case progress := <-n.RaftNode.Progress():
+			var err error
+
 			if !raft.ArePersistentStatesEqual(prevHardState, progress.HardState) {
-				if err := n.RaftStateStorage.SetState(progress.HardState); err != nil {
+				n.Metrics.ObserveRaftSetState(func() {
+					err = n.RaftStateStorage.SetState(progress.HardState)
+				})
+				if err != nil {
 					panic(err)
 				}
 				prevHardState = progress.HardState
 			}
 
-			if err := n.RaftLogStorage.Append(progress.EntriesToPersist...); err != nil {
+			n.Metrics.ObserveRaftAppend(func() {
+				err = n.RaftLogStorage.Append(progress.EntriesToPersist...)
+			})
+			if err != nil {
 				panic(err)
 			}
 
