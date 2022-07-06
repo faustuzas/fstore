@@ -9,6 +9,7 @@ import (
 	"github.com/faustuzas/distributed-kv/logging"
 	"github.com/faustuzas/distributed-kv/node"
 	"github.com/faustuzas/distributed-kv/raft"
+	raftstorage "github.com/faustuzas/distributed-kv/raft/storage"
 	"github.com/faustuzas/distributed-kv/raft/transport"
 	"github.com/faustuzas/distributed-kv/storage"
 	"github.com/faustuzas/distributed-kv/util"
@@ -58,7 +59,14 @@ func startNode(id config.ServerId, topology config.Topology) error {
 		return fmt.Errorf("creating storage: %w", err)
 	}
 
-	raftStorage := &raft.MemoryStorage{}
+	raftStorage, err := raftstorage.NewOnDiskStorage(raftstorage.OnDiskParams{
+		DataDir:      topology.Servers[id].DataDir,
+		Encoder:      raftstorage.NewJsonEncoder(),
+		MaxBlockSize: 1024 * 1024,
+	})
+	if err != nil {
+		return fmt.Errorf("creating raft storage: %w", err)
+	}
 
 	raftNode, err := raft.StartNode(raft.Params{
 		ID:                       uint64(id),
@@ -74,12 +82,13 @@ func startNode(id config.ServerId, topology config.Topology) error {
 	}
 
 	db := &node.DBNode{
-		Config:            topology.Servers[id],
-		Storage:           dbStorage,
-		RaftNode:          raftNode,
-		RaftMemoryStorage: raftStorage,
-		Logger:            logging.NewLogger(fmt.Sprintf("node #%v", id), logging.DefaultLevel),
-		Metrics:           node.NewMetrics(prometheus.DefaultRegisterer),
+		Config:           topology.Servers[id],
+		Storage:          dbStorage,
+		RaftNode:         raftNode,
+		RaftStateStorage: raftStorage,
+		RaftLogStorage:   raftStorage,
+		Logger:           logging.NewLogger(fmt.Sprintf("node #%v", id), logging.DefaultLevel),
+		Metrics:          node.NewMetrics(prometheus.DefaultRegisterer),
 	}
 
 	db.RaftTransport = &transport.HttpTransport{

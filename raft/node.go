@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/faustuzas/distributed-kv/logging"
 	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
-	"os"
-	"runtime/debug"
 )
 
 var (
@@ -173,18 +171,11 @@ func (n *node) Stop() {
 // run is the raft processing loop which serialises all data mutations and message processing
 // using channels
 func (n *node) run() {
-	var lastProcessedMsg pb.Message
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Printf("RAFT IS PANICING: %v\n", err)
-			fmt.Printf("RAFT DUMP: %+v\n", n.r.r)
-			fmt.Printf("Last processed msg: %+v\n", lastProcessedMsg)
-			entries, _ := n.r.r.raftLog.allEntries()
-			fmt.Printf("RAFT LOG: %+v\n", entries)
-			fmt.Printf("Stack trace:\n%s\n", string(debug.Stack()))
-			os.Exit(1)
-		}
-	}()
+	//defer func() {
+	//	if err := recover(); err != nil {
+	//		debugRecover(n.r.r, err.(error))
+	//	}
+	//}()
 
 	var (
 		// the instance of Progress that application should process or is processing at the moment
@@ -232,7 +223,6 @@ func (n *node) run() {
 				panic("tick returned an err: " + err.Error())
 			}
 		case msg := <-n.receiveCh:
-			lastProcessedMsg = msg
 			if err := n.r.step(msg); err != nil {
 				// TODO: change to error logging later
 				panic("processing receive message returned an err: " + err.Error())

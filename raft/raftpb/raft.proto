@@ -22,13 +22,14 @@ message PersistentState {
 
 // MessageType describes which type the message is. The type invokes different operations in the Raft state machine
 enum MessageType {
-  MsgTick = 0;
-  MsgCampaign = 1;
-  MsgVote = 2;
-  MsgVoteRes = 3;
-  MsgApp = 4;
-  MsgAppRes = 5;
-  MsgPropose = 6;
+  MsgUnknown = 0;
+  MsgTick = 1;
+  MsgCampaign = 2;
+  MsgVote = 3;
+  MsgVoteRes = 4;
+  MsgApp = 5;
+  MsgAppRes = 6;
+  MsgPropose = 7;
 }
 
 // Message is an input to the Raft state machine. It is a holder of all relevant state

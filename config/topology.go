@@ -15,8 +15,7 @@ type Server struct {
 	RaftPort int    `yaml:"raft_port"`
 	HttpPort int    `yaml:"http_port"`
 
-	StateFile string `yaml:"state_file"`
-	LogDir    string `yaml:"log_dir"`
+	DataDir string `yaml:"data_dir"`
 }
 
 func (s Server) RaftAddress() string {

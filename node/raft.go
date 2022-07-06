@@ -14,13 +14,13 @@ func (n *DBNode) runRaftProcess() {
 		select {
 		case progress := <-n.RaftNode.Progress():
 			if !raft.ArePersistentStatesEqual(prevHardState, progress.HardState) {
-				if err := n.RaftMemoryStorage.SetState(progress.HardState); err != nil {
+				if err := n.RaftStateStorage.SetState(progress.HardState); err != nil {
 					panic(err)
 				}
 				prevHardState = progress.HardState
 			}
 
-			if err := n.RaftMemoryStorage.Append(progress.EntriesToPersist...); err != nil {
+			if err := n.RaftLogStorage.Append(progress.EntriesToPersist...); err != nil {
 				panic(err)
 			}
 
@@ -29,6 +29,10 @@ func (n *DBNode) runRaftProcess() {
 			n.RaftNode.Advance()
 
 			for _, entry := range progress.EntriesToApply {
+				if len(entry.Data) == 0 {
+					continue
+				}
+
 				var req RaftRequest
 				_ = json.Unmarshal(entry.Data, &req)
 

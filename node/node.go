@@ -11,6 +11,7 @@ import (
 	"github.com/faustuzas/distributed-kv/logging"
 	"github.com/faustuzas/distributed-kv/raft"
 	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	raftstorage "github.com/faustuzas/distributed-kv/raft/storage"
 	"github.com/faustuzas/distributed-kv/raft/transport"
 	"github.com/faustuzas/distributed-kv/storage"
 	"github.com/gorilla/mux"
@@ -30,9 +31,10 @@ type DBNode struct {
 
 	Storage storage.Storage
 
-	RaftNode          raft.Node
-	RaftTransport     transport.Transport
-	RaftMemoryStorage *raft.MemoryStorage
+	RaftNode         raft.Node
+	RaftTransport    transport.Transport
+	RaftStateStorage raftstorage.MutableStateStorage
+	RaftLogStorage   raftstorage.MutableLogStorage
 
 	Logger  logging.Logger
 	Metrics *Metrics

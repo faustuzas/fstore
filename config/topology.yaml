@@ -4,19 +4,16 @@ servers:
     raft_port: 5001
     http_port: 8001
 
-    state_file: "_data/1/state.txt"
-    log_dir: "_data/1/log"
+    data_dir: "_data/1"
   2:
     host: localhost
     raft_port: 5002
     http_port: 8002
 
-    state_file: "_data/2/state.txt"
-    log_dir: "_data/2/log"
+    data_dir: "_data/2"
   3:
     host: localhost
     raft_port: 5003
     http_port: 8003
 
-    state_file: "_data/3/state.txt"
-    log_dir: "_data/3/log"
+    data_dir: "_data/3"

@@ -14,7 +14,7 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 
 export const options = {
     vus: 100,
-    duration: '60s',
+    duration: '30s',
     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
 };
 

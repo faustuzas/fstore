@@ -1,17 +1,17 @@
 package transport
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 
+	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 )
 
 type Encoder interface {
-	Encode(w io.Writer, msg interface{}) error
-	Decode(r io.Reader, s interface{}) error
+	Encode(w io.Writer, msg *pb.Message) error
+	Decode(r io.Reader, msg *pb.Message) error
 
 	ContentType() string
 }
@@ -28,20 +28,12 @@ func NewJsonEncoder() Encoder {
 	}
 }
 
-func (e *jsonEncoder) Encode(w io.Writer, msg interface{}) error {
-	if m, ok := msg.(proto.Message); ok {
-		return e.enc.Marshal(w, m)
-	}
-
-	return json.NewEncoder(w).Encode(msg)
+func (e *jsonEncoder) Encode(w io.Writer, msg *pb.Message) error {
+	return e.enc.Marshal(w, msg)
 }
 
-func (e *jsonEncoder) Decode(r io.Reader, s interface{}) error {
-	if m, ok := s.(proto.Message); ok {
-		return jsonpb.Unmarshal(r, m)
-	}
-
-	return json.NewDecoder(r).Decode(s)
+func (e *jsonEncoder) Decode(r io.Reader, msg *pb.Message) error {
+	return jsonpb.Unmarshal(r, msg)
 }
 
 func (e *jsonEncoder) ContentType() string {
@@ -55,13 +47,8 @@ func NewProtobufEncoder() Encoder {
 	return &protobufEncoder{}
 }
 
-func (e *protobufEncoder) Encode(w io.Writer, msg interface{}) error {
-	m, ok := msg.(proto.Marshaler)
-	if !ok {
-		return fmt.Errorf("only protobuf struct can be encoded using protobuf encoder")
-	}
-
-	bytes, err := m.Marshal()
+func (e *protobufEncoder) Encode(w io.Writer, msg *pb.Message) error {
+	bytes, err := msg.Marshal()
 	if err != nil {
 		return fmt.Errorf("marshaling message: %w", err)
 	}
@@ -73,12 +60,7 @@ func (e *protobufEncoder) Encode(w io.Writer, msg interface{}) error {
 	return nil
 }
 
-func (e *protobufEncoder) Decode(r io.Reader, s interface{}) error {
-	msg, ok := s.(proto.Message)
-	if !ok {
-		return fmt.Errorf("only protobuf struct can be decoded using protobuf encoder")
-	}
-
+func (e *protobufEncoder) Decode(r io.Reader, msg *pb.Message) error {
 	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return fmt.Errorf("reading bytes: %w", err)

@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
-
+//
 // export const options = {
 //     vus: 1,
 //     duration: '1s',
@@ -13,11 +13,11 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 //     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
 // };
 
-export const options = {
-    vus: 100,
-    duration: '30s',
-    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
-};
+// export const options = {
+//     vus: 100,
+//     duration: '30s',
+//     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
+// };
 
 const baseUrl = 'http://localhost:8001/v1/'
 

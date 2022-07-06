@@ -645,6 +645,17 @@ func (r *raft) sendAppend(to uint64) error {
 		return fmt.Errorf("getting entries from %d: %w", r.nextIndex[to], err)
 	}
 
+	// TODO: remove when stable
+	if len(entries) != 0 {
+		last := entries[0].Index - 1
+		for _, e := range entries {
+			if last+1 != e.Index {
+				panic(fmt.Sprintf("sending not linear entries: %v", entries))
+			}
+			last = e.Index
+		}
+	}
+
 	r.send(pb.Message{
 		Type:        pb.MsgApp,
 		To:          to,
