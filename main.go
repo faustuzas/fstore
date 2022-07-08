@@ -63,7 +63,7 @@ func startNode(id config.ServerId, topology config.Topology) error {
 		DataDir:      topology.Servers[id].DataDir,
 		Encoder:      raftstorage.NewJsonEncoder(),
 		Metrics:      raftstorage.NewMetrics(prometheus.DefaultRegisterer),
-		MaxBlockSize: 1024 * 1024,
+		MaxBlockSize: 1024 * 1024, // TODO: looks like it does not work, created files are way smaller
 	})
 	if err != nil {
 		return fmt.Errorf("creating raft storage: %w", err)

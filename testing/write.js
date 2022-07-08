@@ -91,7 +91,7 @@ export default function () {
 // vus............................: 100     min=100       max=100
 // vus_max........................: 100     min=100       max=100
 
-// SCENARIO #3: Running 3-nodes cluster with disk based raft log using json for encoding
+// SCENARIO #4: Running 3-nodes cluster with disk based raft log using json for encoding
 // running (0m30.5s), 000/100 VUs, 1213 complete and 0 interrupted iterations
 // checks.........................: 100.00% ✓ 1213      ✗ 0
 // data_received..................: 143 kB  4.7 kB/s

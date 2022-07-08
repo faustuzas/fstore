@@ -398,8 +398,17 @@ func (r *raft) stepLeader(message pb.Message) error {
 	case pb.MsgAppRes:
 		// TODO: do smarter
 		if message.Reject {
-			// add a safeguard to not go below zero in the case of duplicate rejects
-			r.nextIndex[message.From] = util.MaxUint64(r.nextIndex[message.From]-1, 1)
+			hintIdx := message.LogIndex
+			if message.LogTerm > 0 {
+				var err error
+				hintIdx, err = r.raftLog.findConflictByTerm(message.LogTerm, hintIdx)
+				if err != nil {
+					return fmt.Errorf("finding conflicts: %w", err)
+				}
+			}
+
+			// a safeguard to not go below zero in the case of duplicate rejects
+			r.nextIndex[message.From] = util.MaxUint64(hintIdx+1, 1)
 			if err := r.sendAppend(message.From); err != nil {
 				return fmt.Errorf("sending append after append rejection: %w", err)
 			}
@@ -523,7 +532,25 @@ func (r *raft) handleAppendEntriesMessage(message pb.Message) error {
 		r.raftLog.committedTo(util.MinUint64(message.CommitIndex, lastIndex))
 		r.send(pb.Message{Type: pb.MsgAppRes, To: message.From, LogIndex: lastIndex, Reject: false})
 	} else {
-		r.send(pb.Message{Type: pb.MsgAppRes, To: message.From, Reject: true})
+		// Since we rejected a log entry for a msg.LogTerm it probably means that we don't have any or only faulty
+		// entries for this term thus we can skip it all together and return the last log index that we know of
+		// the previous term.
+		lastIndex, err := r.raftLog.lastIndex()
+		if err != nil {
+			return fmt.Errorf("getting last index: %w", err)
+		}
+
+		hintIndex, err := r.raftLog.findConflictByTerm(message.LogTerm, util.MinUint64(message.LogIndex, lastIndex))
+		if err != nil {
+			return fmt.Errorf("finding conflict by term: %w", err)
+		}
+
+		hintTerm, err := r.raftLog.term(hintIndex)
+		if err != nil {
+			return fmt.Errorf("getting term: %w", err)
+		}
+
+		r.send(pb.Message{Type: pb.MsgAppRes, To: message.From, Reject: true, LogTerm: hintTerm, LogIndex: hintIndex})
 	}
 
 	return nil

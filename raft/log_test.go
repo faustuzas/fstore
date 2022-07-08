@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"fmt"
 	"testing"
 
 	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
@@ -615,5 +616,68 @@ func TestAppliedTo(t *testing.T) {
 	t.Run("sets_the_new_applied_index", func(t *testing.T) {
 		l.appliedTo(3)
 		require.Equal(t, uint64(3), l.appliedIndex)
+	})
+}
+
+func TestFindConflictByTerm(t *testing.T) {
+	l := &raftLog{
+		stableLog: newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 4, Index: 2}, {Term: 4, Index: 3}}),
+		unstable:  unstableLog{entries: []pb.Entry{{Term: 5, Index: 4}, {Term: 6, Index: 5}, {Term: 6, Index: 6}}, offset: 4},
+	}
+
+	ttable := []struct {
+		term, index uint64
+
+		expectIdx uint64
+	}{
+		{
+			term:  4,
+			index: 3,
+
+			expectIdx: 3,
+		},
+		{
+			term:  5,
+			index: 3,
+
+			expectIdx: 3,
+		},
+		{
+			term:  2,
+			index: 3,
+
+			expectIdx: 1,
+		},
+		{
+			term:  8,
+			index: 6,
+
+			expectIdx: 6,
+		},
+		{
+			term:  2,
+			index: 6,
+
+			expectIdx: 1,
+		},
+	}
+
+	for i, tt := range ttable {
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			idx, err := l.findConflictByTerm(tt.term, tt.index)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectIdx, idx)
+		})
+	}
+
+	t.Run("returns_zeroes_on_empty_log", func(t *testing.T) {
+		l := &raftLog{
+			stableLog: newInMemoryStorage(nil),
+			unstable:  unstableLog{entries: nil, offset: 1},
+		}
+
+		idx, err := l.findConflictByTerm(10, 11)
+		require.NoError(t, err)
+		require.Zero(t, idx)
 	})
 }

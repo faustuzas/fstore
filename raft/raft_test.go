@@ -566,7 +566,66 @@ func TestSingleNodeStep(t *testing.T) {
 
 		msgs := drainMessages(r)
 		require.Len(t, msgs, 1)
-		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 5, To: 10, From: _localNodeId, Reject: true}, msgs[0])
+		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 5, To: 10, From: _localNodeId, Reject: true, LogIndex: 2, LogTerm: 3}, msgs[0])
+	})
+
+	t.Run("follower_rejects_append_request_with_hints", func(t *testing.T) {
+		log := newInMemoryStorage([]pb.Entry{{Term: 2, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}, {Term: 4, Index: 4}})
+
+		r := createRaft(log)
+		_ = r.becomeFollower(4, 10)
+
+		_ = r.step(pb.Message{
+			Type:        pb.MsgApp,
+			From:        10,
+			To:          _localNodeId,
+			Term:        5,
+			Entries:     []pb.Entry{{Term: 5, Index: 5}},
+			LogTerm:     5,
+			LogIndex:    4,
+			CommitIndex: 1,
+		})
+
+		msgs := drainMessages(r)
+		require.Len(t, msgs, 1)
+		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 5, To: 10, From: _localNodeId, Reject: true, LogTerm: 4, LogIndex: 4}, msgs[0])
+
+		_ = r.step(pb.Message{
+			Type:        pb.MsgApp,
+			From:        10,
+			To:          _localNodeId,
+			Term:        5,
+			Entries:     []pb.Entry{{Term: 5, Index: 4}, {Term: 5, Index: 5}},
+			LogTerm:     2,
+			LogIndex:    3,
+			CommitIndex: 1,
+		})
+
+		msgs = drainMessages(r)
+		require.Len(t, msgs, 1)
+		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 5, To: 10, From: _localNodeId, Reject: true, LogTerm: 2, LogIndex: 1}, msgs[0])
+	})
+
+	t.Run("follower_rejects_and_hints_to_start_from_the_beginning_if_the_log_does_not_match", func(t *testing.T) {
+		log := newInMemoryStorage([]pb.Entry{{Term: 6, Index: 1}, {Term: 6, Index: 2}, {Term: 6, Index: 3}, {Term: 6, Index: 4}})
+
+		r := createRaft(log)
+		_ = r.becomeFollower(4, 10)
+
+		_ = r.step(pb.Message{
+			Type:        pb.MsgApp,
+			From:        10,
+			To:          _localNodeId,
+			Term:        7,
+			Entries:     []pb.Entry{{Term: 5, Index: 5}},
+			LogTerm:     5,
+			LogIndex:    4,
+			CommitIndex: 1,
+		})
+
+		msgs := drainMessages(r)
+		require.Len(t, msgs, 1)
+		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 7, To: 10, From: _localNodeId, Reject: true, LogTerm: 0, LogIndex: 0}, msgs[0])
 	})
 
 	t.Run("follower_rejects_append_request_if_previous_log_term_is_not_correct", func(t *testing.T) {
@@ -591,7 +650,7 @@ func TestSingleNodeStep(t *testing.T) {
 
 		msgs := drainMessages(r)
 		require.Len(t, msgs, 1)
-		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 5, To: 10, From: _localNodeId, Reject: true}, msgs[0])
+		require.Equal(t, pb.Message{Type: pb.MsgAppRes, Term: 5, To: 10, From: _localNodeId, Reject: true, LogIndex: 2, LogTerm: 3}, msgs[0])
 	})
 
 	t.Run("candidate_resets_leader_election_timeout_on_append_entries_request", func(t *testing.T) {
@@ -788,30 +847,34 @@ func TestSingleNodeStep(t *testing.T) {
 	})
 
 	t.Run("leader_updates_required_data_on_failed_append_responses_and_sends_another_requests", func(t *testing.T) {
-		log := newInMemoryStorage([]pb.Entry{{Term: 3, Index: 1}, {Term: 3, Index: 2}, {Term: 3, Index: 3}})
+		log := newInMemoryStorage([]pb.Entry{{Term: 1, Index: 1}, {Term: 3, Index: 2}, {Term: 4, Index: 3}, {Term: 4, Index: 4}, {Term: 5, Index: 5}})
 
 		r := createRaft(log)
-		r.term = 3
+		r.term = 5
 		r.peers = []uint64{10, 11}
 		r.role = RoleCandidate
-		r.raftLog.commitIndex = 2
+		r.raftLog.commitIndex = 1
 
+		// keep in mind that a new entry is appended upon becoming a leader
 		_ = r.becomeLeader()
 		_ = drainMessages(r)
 
 		// starting indexes
 		require.Equal(t, map[uint64]uint64{10: 0, 11: 0}, r.matchIndex)
-		require.Equal(t, map[uint64]uint64{10: 4, 11: 4}, r.nextIndex)
+		require.Equal(t, map[uint64]uint64{10: 6, 11: 6}, r.nextIndex)
+
+		// imagine that this is the log of node #10:
+		// [1, 2, 3, 8, 9]
 
 		// node #10 rejects the request
-		_ = r.step(pb.Message{Type: pb.MsgAppRes, Term: 3, From: 10, To: _localNodeId, Reject: true})
+		_ = r.step(pb.Message{Type: pb.MsgAppRes, Term: 5, From: 10, To: _localNodeId, Reject: true, LogTerm: 2, LogIndex: 2})
 
 		// indexes are updated
 		require.Equal(t, map[uint64]uint64{10: 0, 11: 0}, r.matchIndex)
-		require.Equal(t, map[uint64]uint64{10: 3, 11: 4}, r.nextIndex)
+		require.Equal(t, map[uint64]uint64{10: 2, 11: 6}, r.nextIndex)
 
 		// commit index is not updated
-		require.Equal(t, uint64(2), r.raftLog.commitIndex)
+		require.Equal(t, uint64(1), r.raftLog.commitIndex)
 
 		msgs := drainMessages(r)
 		require.Len(t, msgs, 1)
@@ -819,65 +882,46 @@ func TestSingleNodeStep(t *testing.T) {
 		// new updated append message is sent
 		appMsg := pb.Message{
 			Type:        pb.MsgApp,
-			Term:        3,
-			To:          10,
-			From:        _localNodeId,
-			LogIndex:    2,
-			LogTerm:     3,
-			Entries:     []pb.Entry{{Term: 3, Index: 3}, {Term: 3, Index: 4}},
-			CommitIndex: 2,
-		}
-		require.Equal(t, appMsg, msgs[0])
-
-		// node #10 rejects the request again
-		_ = r.step(pb.Message{Type: pb.MsgAppRes, Term: 3, From: 10, To: _localNodeId, Reject: true})
-
-		// indexes are updated
-		require.Equal(t, map[uint64]uint64{10: 0, 11: 0}, r.matchIndex)
-		require.Equal(t, map[uint64]uint64{10: 2, 11: 4}, r.nextIndex)
-
-		// commit index is not updated
-		require.Equal(t, uint64(2), r.raftLog.commitIndex)
-
-		msgs = drainMessages(r)
-		require.Len(t, msgs, 1)
-
-		// new updated append message is sent again
-		appMsg = pb.Message{
-			Type:        pb.MsgApp,
-			Term:        3,
+			Term:        5,
 			To:          10,
 			From:        _localNodeId,
 			LogIndex:    1,
-			LogTerm:     3,
-			Entries:     []pb.Entry{{Term: 3, Index: 2}, {Term: 3, Index: 3}, {Term: 3, Index: 4}},
-			CommitIndex: 2,
+			LogTerm:     1,
+			Entries:     []pb.Entry{{Term: 3, Index: 2}, {Term: 4, Index: 3}, {Term: 4, Index: 4}, {Term: 5, Index: 5}, {Term: 5, Index: 6}},
+			CommitIndex: 1,
 		}
 		require.Equal(t, appMsg, msgs[0])
 
-		// now node #11 rejects the request
-		_ = r.step(pb.Message{Type: pb.MsgAppRes, Term: 3, From: 11, To: _localNodeId, Reject: true})
+		// node #10 accepts append request
+		_ = r.step(pb.Message{Type: pb.MsgAppRes, Term: 5, From: 10, To: _localNodeId, LogIndex: 6})
 
 		// indexes are updated
-		require.Equal(t, map[uint64]uint64{10: 0, 11: 0}, r.matchIndex)
-		require.Equal(t, map[uint64]uint64{10: 2, 11: 3}, r.nextIndex)
+		require.Equal(t, map[uint64]uint64{10: 6, 11: 0}, r.matchIndex)
+		require.Equal(t, map[uint64]uint64{10: 7, 11: 6}, r.nextIndex)
+		require.Equal(t, uint64(6), r.raftLog.commitIndex)
 
-		// commit index is not updated
-		require.Equal(t, uint64(2), r.raftLog.commitIndex)
+		_ = drainMessages(r)
+
+		// node #11 rejects the request indicating that the whole log is bad
+		_ = r.step(pb.Message{Type: pb.MsgAppRes, Term: 5, From: 11, To: _localNodeId, Reject: true, LogTerm: 0, LogIndex: 0})
+
+		// indexes are updated
+		require.Equal(t, map[uint64]uint64{10: 6, 11: 0}, r.matchIndex)
+		require.Equal(t, map[uint64]uint64{10: 7, 11: 1}, r.nextIndex)
 
 		msgs = drainMessages(r)
 		require.Len(t, msgs, 1)
 
-		// new updated append message is sent
+		// full log is sent to node #11
 		appMsg = pb.Message{
 			Type:        pb.MsgApp,
-			Term:        3,
+			Term:        5,
 			To:          11,
 			From:        _localNodeId,
-			LogIndex:    2,
-			LogTerm:     3,
-			Entries:     []pb.Entry{{Term: 3, Index: 3}, {Term: 3, Index: 4}},
-			CommitIndex: 2,
+			LogIndex:    0,
+			LogTerm:     0,
+			Entries:     []pb.Entry{{Term: 1, Index: 1}, {Term: 3, Index: 2}, {Term: 4, Index: 3}, {Term: 4, Index: 4}, {Term: 5, Index: 5}, {Term: 5, Index: 6}},
+			CommitIndex: 6,
 		}
 		require.Equal(t, appMsg, msgs[0])
 	})
@@ -1154,11 +1198,17 @@ func TestSingleNodeStep(t *testing.T) {
 		}
 
 		ttable := []struct {
+			hintIndex uint64
+			hintTerm  uint64
+
 			expectLogTerm  uint64
 			expectLogIndex uint64
 			expectEntries  []pb.Entry
 		}{
 			{
+				hintIndex: 1,
+				hintTerm:  1,
+
 				expectLogTerm:  1,
 				expectLogIndex: 1,
 				expectEntries:  []pb.Entry{{Term: 2, Index: 2}, {Term: 3, Index: 3}},
@@ -1184,7 +1234,7 @@ func TestSingleNodeStep(t *testing.T) {
 
 		for i, tt := range ttable {
 			t.Run(fmt.Sprintf("case_%v", i), func(t *testing.T) {
-				err := r.step(pb.Message{Type: pb.MsgAppRes, From: 10, To: _localNodeId, Reject: true})
+				err := r.step(pb.Message{Type: pb.MsgAppRes, From: 10, To: _localNodeId, Reject: true, LogTerm: tt.hintTerm, LogIndex: tt.hintIndex})
 				require.NoError(t, err)
 
 				msgs := drainMessages(r)

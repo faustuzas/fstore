@@ -239,6 +239,34 @@ func (l *raftLog) findConflict(entries ...pb.Entry) (uint64, error) {
 	return 0, nil
 }
 
+// findConflictByTerm finds the largest index in the local raft log
+// where it does not conflict with the given (term, index) combination from the other node
+func (l *raftLog) findConflictByTerm(term, index uint64) (uint64, error) {
+	lastIndex, err := l.lastIndex()
+	if err != nil {
+		return 0, fmt.Errorf("getting last index: %w", err)
+	}
+
+	if index > lastIndex {
+		return lastIndex, nil
+	}
+
+	for {
+		localTerm, err := l.term(index)
+		if err != nil {
+			return 0, fmt.Errorf("getting term: %w", err)
+		}
+
+		if localTerm <= term {
+			break
+		}
+
+		index--
+	}
+
+	return index, nil
+}
+
 // appendEntries appends the entries to unstable entries log and returns the index
 // of the last log entry
 func (l *raftLog) appendEntries(entries ...pb.Entry) (uint64, error) {
