@@ -62,15 +62,47 @@ func (t *HttpTransport) Start() error {
 }
 
 func (t *HttpTransport) Send(messages ...pb.Message) {
-	for _, msg := range messages {
-		ch, ok := t.peers[msg.To]
-		if !ok {
-			t.Logger.Warnf("Message to not existing peer %v", msg.To)
-			continue
-		}
+	t.sendOptimised(messages...)
+}
 
-		ch <- msg
+func (t *HttpTransport) sendOptimised(messages ...pb.Message) {
+	groupBy := map[uint64][]pb.Message{}
+	for _, msg := range messages {
+		groupBy[msg.To] = append(groupBy[msg.To], msg)
 	}
+
+	apps := map[uint64]pb.Message{}
+	for id, msgs := range groupBy {
+		for _, msg := range msgs {
+			if msg.Type == pb.MsgApp {
+				if len(apps[id].Entries) < len(msg.Entries) {
+					apps[id] = msg
+				}
+			} else {
+				t.sendToRecipient(msg)
+			}
+		}
+	}
+
+	for _, app := range apps {
+		t.sendToRecipient(app)
+	}
+}
+
+func (t *HttpTransport) sendDirectly(messages ...pb.Message) {
+	for _, msg := range messages {
+		t.sendToRecipient(msg)
+	}
+}
+
+func (t *HttpTransport) sendToRecipient(msg pb.Message) {
+	ch, ok := t.peers[msg.To]
+	if !ok {
+		t.Logger.Warnf("Message to not existing peer %v", msg.To)
+		return
+	}
+
+	ch <- msg
 }
 
 func (t *HttpTransport) AddPeer(id uint64, url string) {

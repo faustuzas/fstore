@@ -14,7 +14,7 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 
 export const options = {
     vus: 100,
-    duration: '5m',
+    duration: '30s',
     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
 };
 
@@ -150,3 +150,23 @@ export default function () {
 // iterations.....................: 1959    64.965471/s
 // vus............................: 100     min=100     max=100
 // vus_max........................: 100     min=100     max=100
+
+// SCENARIO #7: Running 3-nodes cluster with last append message filtering
+// running (0m30.6s), 000/100 VUs, 7321 complete and 0 interrupted iterations
+// checks.........................: 100.00% ✓ 7321       ✗ 0
+// data_received..................: 864 kB  28 kB/s
+// data_sent......................: 2.7 MB  89 kB/s
+// http_req_blocked...............: avg=577.33µs min=1µs      med=3µs      max=62.05ms p(95)=6µs      p(99)=29.93ms p(99.99)=61.92ms count=7321
+// http_req_connecting............: avg=463.9µs  min=0s       med=0s       max=54.29ms p(95)=0s       p(99)=29.7ms  p(99.99)=51.3ms  count=7321
+// http_req_duration..............: avg=414.56ms min=184.13ms med=357.07ms max=2.79s   p(95)=646.3ms  p(99)=2.64s   p(99.99)=2.79s   count=7321
+// { expected_response:true }...: avg=414.56ms min=184.13ms med=357.07ms max=2.79s   p(95)=646.3ms  p(99)=2.64s   p(99.99)=2.79s   count=7321
+// http_req_failed................: 0.00%   ✓ 0          ✗ 7321
+// http_req_receiving.............: avg=57.14µs  min=14µs     med=33µs     max=4.97ms  p(95)=131µs    p(99)=458.6µs p(99.99)=4.78ms  count=7321
+// http_req_sending...............: avg=28.21µs  min=6µs      med=15µs     max=4.75ms  p(95)=50µs     p(99)=156.8µs p(99.99)=4.34ms  count=7321
+// http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s      p(95)=0s       p(99)=0s      p(99.99)=0s      count=7321
+// http_req_waiting...............: avg=414.47ms min=184.08ms med=356.96ms max=2.79s   p(95)=646.28ms p(99)=2.64s   p(99.99)=2.79s   count=7321
+// http_reqs......................: 7321    238.951644/s
+// iteration_duration.............: avg=415.98ms min=184.62ms med=358.06ms max=2.79s   p(95)=658.75ms p(99)=2.64s   p(99.99)=2.79s   count=7321
+// iterations.....................: 7321    238.951644/s
+// vus............................: 100     min=100      max=100
+// vus_max........................: 100     min=100      max=100
