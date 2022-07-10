@@ -96,7 +96,7 @@ func (n *DBNode) createServer() (*http.Server, net.Listener, error) {
 }
 
 func (n *DBNode) runTicker() {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(1000 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {

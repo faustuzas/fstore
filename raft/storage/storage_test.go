@@ -169,6 +169,11 @@ func (s *LogStorageTestSuite) Run() {
 				[]pb.Entry{{Term: 2, Index: 3}, {Term: 2, Index: 4}},
 				[]pb.Entry{{Term: 1, Index: 1}, {Term: 1, Index: 2}, {Term: 2, Index: 3}, {Term: 2, Index: 4}},
 			},
+			{
+				"override_entries_from_the_start",
+				[]pb.Entry{{Term: 14, Index: 1}, {Term: 14, Index: 2}},
+				[]pb.Entry{{Term: 14, Index: 1}, {Term: 14, Index: 2}},
+			},
 		}
 
 		for _, tt := range ttable {

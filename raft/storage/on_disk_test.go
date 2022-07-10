@@ -44,8 +44,7 @@ func TestDiskLogStorage(t *testing.T) {
 	suite := LogStorageTestSuite{
 		t: t,
 		factory: func(entries []pb.Entry) MutableLogStorage {
-			dataDir = createTmpDir()
-			logDir = path.Join(dataDir, "log")
+			dataDir, logDir = createTmpAndLogDirs()
 
 			s, err := NewOnDiskStorage(OnDiskParams{
 				DataDir:      dataDir,
@@ -82,10 +81,7 @@ func TestDiskLogStorage(t *testing.T) {
 func TestOnDiskStorage(t *testing.T) {
 	t.Run("AppendEntries", func(t *testing.T) {
 		t.Run("initial_entry", func(t *testing.T) {
-			var (
-				tmpDir = createTmpDir()
-				logDir = path.Join(tmpDir, "log")
-			)
+			tmpDir, logDir := createTmpAndLogDirs()
 			defer func() {
 				_ = os.RemoveAll(tmpDir)
 			}()
@@ -106,10 +102,7 @@ func TestOnDiskStorage(t *testing.T) {
 		})
 
 		t.Run("append_multiple_times_to_several_blocks", func(t *testing.T) {
-			var (
-				tmpDir = createTmpDir()
-				logDir = path.Join(tmpDir, "log")
-			)
+			tmpDir, logDir := createTmpAndLogDirs()
 			defer func() {
 				_ = os.RemoveAll(tmpDir)
 			}()
@@ -134,6 +127,41 @@ func TestOnDiskStorage(t *testing.T) {
 			require.Equal(t, []string{"block-0.txt", "block-1.txt"}, listDir(logDir))
 			require.Equal(t, []pb.Entry{{Index: 1, Term: 1, Data: []byte("first entry")}, {Index: 2, Term: 1, Data: []byte("second entry")}}, readLogBlock(logDir, "block-0.txt"))
 			require.Equal(t, []pb.Entry{{Index: 3, Term: 1, Data: []byte("third entry")}}, readLogBlock(logDir, "block-1.txt"))
+		})
+
+		t.Run("rotates_block_when_it_grows_too_big", func(t *testing.T) {
+			tmpDir, logDir := createTmpAndLogDirs()
+			defer func() {
+				_ = os.RemoveAll(tmpDir)
+			}()
+
+			storage, err := NewOnDiskStorage(OnDiskParams{
+				DataDir:      tmpDir,
+				Encoder:      NewJsonEncoder(),
+				Metrics:      NewMetrics(prometheus.NewRegistry()),
+				MaxBlockSize: 150,
+			})
+			require.NoError(t, err)
+
+			err = storage.Append(pb.Entry{Index: 1, Term: 1, Data: []byte("entry-12345")}) // 51 bytes
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"block-0.txt"}, listDir(logDir))
+
+			err = storage.Append(pb.Entry{Index: 2, Term: 1, Data: []byte("entry-12345")}) // 51 bytes
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"block-0.txt"}, listDir(logDir))
+
+			err = storage.Append(pb.Entry{Index: 3, Term: 1, Data: []byte("entry-12345")}) // 51 bytes
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"block-0.txt"}, listDir(logDir))
+
+			err = storage.Append(pb.Entry{Index: 4, Term: 1, Data: []byte("entry-12345")}) // 51 bytes
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"block-0.txt", "block-1.txt"}, listDir(logDir))
 		})
 	})
 }
@@ -167,8 +195,17 @@ func TestLogBlock(t *testing.T) {
 	})
 }
 
+func createTmpAndLogDirs() (string, string) {
+	var (
+		tmpDir = createTmpDir()
+		logDir = path.Join(tmpDir, "log")
+	)
+
+	return tmpDir, logDir
+}
+
 func createTmpDir() string {
-	dir, err := os.MkdirTemp("", "raft_log*")
+	dir, err := os.MkdirTemp("", "raft*")
 	if err != nil {
 		panic(err)
 	}

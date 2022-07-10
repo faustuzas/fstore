@@ -17,7 +17,6 @@ const (
 	Error
 )
 
-// TODO: set to debug and check wtf is happening
 const (
 	DefaultLevel = Info
 )

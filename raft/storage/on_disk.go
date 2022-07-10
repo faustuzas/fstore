@@ -320,6 +320,16 @@ func (l *log) Term(idx uint64) (uint64, error) {
 }
 
 func (l *log) TruncateTo(lastGoodIdx uint64) error {
+	// all log is bad and should be removed
+	if lastGoodIdx == 0 {
+		for _, b := range l.blocks {
+			if err := b.Remove(); err != nil {
+				return fmt.Errorf("removing block %d: %w", b.Id, err)
+			}
+		}
+		return nil
+	}
+
 	// find the block from where we have invalid entries
 	block := l.findBlockForIdx(lastGoodIdx)
 	if block == nil {
@@ -445,7 +455,6 @@ func (lb *logBlock) loadEntries() error {
 				return fmt.Errorf("decoding: %w", err)
 			}
 
-			lb.size += bytesRead
 			lb.Metrics.RecordBytesRead(bytesRead)
 
 			lb.cachedEntries = append(lb.cachedEntries, entry)
