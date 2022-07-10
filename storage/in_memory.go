@@ -7,13 +7,13 @@ import (
 	"sync"
 )
 
+var _ Storage = (*inMemory)(nil)
+
 type inMemory struct {
 	mu sync.Mutex
 
 	storage map[string]string
 }
-
-var _ Storage = (*inMemory)(nil)
 
 func (i *inMemory) Init() error {
 	i.storage = make(map[string]string, 128)

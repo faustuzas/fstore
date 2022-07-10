@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-
 	"github.com/faustuzas/distributed-kv/config"
 	"github.com/faustuzas/distributed-kv/logging"
 	"github.com/faustuzas/distributed-kv/node"
@@ -14,6 +11,10 @@ import (
 	"github.com/faustuzas/distributed-kv/storage"
 	"github.com/faustuzas/distributed-kv/util"
 	"github.com/prometheus/client_golang/prometheus"
+	"os"
+	"strconv"
+
+	_ "net/http/pprof"
 )
 
 func runAll() error {
@@ -54,9 +55,14 @@ func startNode(id config.ServerId, topology config.Topology) error {
 		peers = append(peers, uint64(peer.Id))
 	}
 
-	dbStorage, err := storage.CreateStorage(storage.Params{})
-	if err != nil {
-		return fmt.Errorf("creating storage: %w", err)
+	//dbStorage, err := storage.CreateStorage(storage.Params{})
+	//if err != nil {
+	//	return fmt.Errorf("creating storage: %w", err)
+	//}
+
+	dbStorage := &storage.PebbleWrapper{DataDir: topology.Servers[id].DataDir}
+	if err := dbStorage.Init(); err != nil {
+		return fmt.Errorf("init storage: %w", err)
 	}
 
 	raftStorage, err := raftstorage.NewOnDiskStorage(raftstorage.OnDiskParams{
@@ -120,7 +126,7 @@ func startNode(id config.ServerId, topology config.Topology) error {
 }
 
 // curl -X POST http://localhost:8001/raft/admin/campaign
-func main() {
+func db() {
 	var idStr = "1"
 	if len(os.Args) > 1 {
 		idStr = os.Args[1]
@@ -137,4 +143,8 @@ func main() {
 	}
 
 	<-util.WaitForTerminationRequest()
+}
+
+func main() {
+	db()
 }

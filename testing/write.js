@@ -92,21 +92,42 @@ export default function () {
 // vus_max........................: 100     min=100       max=100
 
 // SCENARIO #4: Running 3-nodes cluster with disk based raft log using json for encoding
-// running (0m30.5s), 000/100 VUs, 1213 complete and 0 interrupted iterations
-// checks.........................: 100.00% ✓ 1213      ✗ 0
-// data_received..................: 143 kB  4.7 kB/s
-// data_sent......................: 451 kB  15 kB/s
-// http_req_blocked...............: avg=1.36ms  min=1µs      med=3µs   max=29.93ms p(95)=15.52ms  p(99)=21.88ms  p(99.99)=29.64ms  count=1213
-// http_req_connecting............: avg=1.35ms  min=0s       med=0s    max=27.44ms p(95)=15.45ms  p(99)=21.82ms  p(99.99)=27.03ms  count=1213
-// http_req_duration..............: avg=2.49s   min=255.06ms med=2.49s max=4.6s    p(95)=3.63s    p(99)=4.44s    p(99.99)=4.6s     count=1213
-// { expected_response:true }...: avg=2.49s   min=255.06ms med=2.49s max=4.6s    p(95)=3.63s    p(99)=4.44s    p(99.99)=4.6s     count=1213
-// http_req_failed................: 0.00%   ✓ 0         ✗ 1213
-// http_req_receiving.............: avg=60.44µs min=24µs     med=53µs  max=390µs   p(95)=114.39µs p(99)=158.63µs p(99.99)=373.27µs count=1213
-// http_req_sending...............: avg=62.12µs min=8µs      med=20µs  max=10.68ms p(95)=115µs    p(99)=1.11ms   p(99.99)=9.88ms   count=1213
-// http_req_tls_handshaking.......: avg=0s      min=0s       med=0s    max=0s      p(95)=0s       p(99)=0s       p(99.99)=0s       count=1213
-// http_req_waiting...............: avg=2.49s   min=254.85ms med=2.49s max=4.6s    p(95)=3.63s    p(99)=4.44s    p(99.99)=4.6s     count=1213
-// http_reqs......................: 1213    39.751987/s
-// iteration_duration.............: avg=2.49s   min=258.56ms med=2.49s max=4.63s   p(95)=3.63s    p(99)=4.46s    p(99.99)=4.62s    count=1213
-// iterations.....................: 1213    39.751987/s
+// running (0m30.2s), 000/100 VUs, 1279 complete and 0 interrupted iterations
+// checks.........................: 100.00% ✓ 1279      ✗ 0
+// data_received..................: 151 kB  5.0 kB/s
+// data_sent......................: 476 kB  16 kB/s
+// http_req_blocked...............: avg=6.26ms  min=1µs      med=3µs   max=92.85ms p(95)=85.78ms  p(99)=91.92ms  p(99.99)=92.84ms  count=1279
+// http_req_connecting............: avg=5.25ms  min=0s       med=0s    max=82.65ms p(95)=69.65ms  p(99)=78.91ms  p(99.99)=82.44ms  count=1279
+// http_req_duration..............: avg=2.34s   min=234.3ms  med=2.36s max=4.34s   p(95)=3.29s    p(99)=4.09s    p(99.99)=4.33s    count=1279
+// { expected_response:true }...: avg=2.34s   min=234.3ms  med=2.36s max=4.34s   p(95)=3.29s    p(99)=4.09s    p(99.99)=4.33s    count=1279
+// http_req_failed................: 0.00%   ✓ 0         ✗ 1279
+// http_req_receiving.............: avg=56.09µs min=16µs     med=48µs  max=356µs   p(95)=118µs    p(99)=180.66µs p(99.99)=349.35µs count=1279
+// http_req_sending...............: avg=55.64µs min=9µs      med=18µs  max=1.44ms  p(95)=161.39µs p(99)=966.02µs p(99.99)=1.44ms   count=1279
+// http_req_tls_handshaking.......: avg=0s      min=0s       med=0s    max=0s      p(95)=0s       p(99)=0s       p(99.99)=0s       count=1279
+// http_req_waiting...............: avg=2.34s   min=234ms    med=2.36s max=4.34s   p(95)=3.29s    p(99)=4.09s    p(99.99)=4.33s    count=1279
+// http_reqs......................: 1279    42.289795/s
+// iteration_duration.............: avg=2.35s   min=250.96ms med=2.36s max=4.43s   p(95)=3.33s    p(99)=4.15s    p(99.99)=4.42s    count=1279
+// iterations.....................: 1279    42.289795/s
 // vus............................: 100     min=100     max=100
 // vus_max........................: 100     min=100     max=100
+
+// SCENARIO #5: Running 3-nodes cluster with disk based raft log and disk based db storage Pebble
+// running (0m30.4s), 000/100 VUs, 1207 complete and 0 interrupted iterations
+// checks.........................: 100.00% ✓ 1207      ✗ 0
+// data_received..................: 142 kB  4.7 kB/s
+// data_sent......................: 449 kB  15 kB/s
+// http_req_blocked...............: avg=2.53ms  min=1µs      med=3µs   max=50.95ms p(95)=29.32ms p(99)=41.76ms  p(99.99)=50.91ms  count=1207
+// http_req_connecting............: avg=2.46ms  min=0s       med=0s    max=42.79ms p(95)=29.16ms p(99)=41.43ms  p(99.99)=42.79ms  count=1207
+// http_req_duration..............: avg=2.5s    min=263.19ms med=2.51s max=4.48s   p(95)=3.56s   p(99)=4.28s    p(99.99)=4.48s    count=1207
+// { expected_response:true }...: avg=2.5s    min=263.19ms med=2.51s max=4.48s   p(95)=3.56s   p(99)=4.28s    p(99.99)=4.48s    count=1207
+// http_req_failed................: 0.00%   ✓ 0         ✗ 1207
+// http_req_receiving.............: avg=59.3µs  min=18µs     med=51µs  max=279µs   p(95)=117µs   p(99)=159.88µs p(99.99)=272.84µs count=1207
+// http_req_sending...............: avg=34.63µs min=7µs      med=20µs  max=1.07ms  p(95)=98µs    p(99)=315.64µs p(99.99)=1.01ms   count=1207
+// http_req_tls_handshaking.......: avg=0s      min=0s       med=0s    max=0s      p(95)=0s      p(99)=0s       p(99.99)=0s       count=1207
+// http_req_waiting...............: avg=2.5s    min=262.8ms  med=2.51s max=4.48s   p(95)=3.56s   p(99)=4.28s    p(99.99)=4.48s    count=1207
+// http_reqs......................: 1207    39.758089/s
+// iteration_duration.............: avg=2.5s    min=268.99ms med=2.51s max=4.51s   p(95)=3.57s   p(99)=4.29s    p(99.99)=4.51s    count=1207
+// iterations.....................: 1207    39.758089/s
+// vus............................: 100     min=100     max=100
+// vus_max........................: 100     min=100     max=100
+
