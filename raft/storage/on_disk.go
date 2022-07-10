@@ -194,59 +194,73 @@ func (l *log) appendEntries(entries ...pb.Entry) error {
 	}
 
 	if block.size > l.MaxBlockSize {
-		newBlock := l.newBlock(block.Id+1, block.lastIdx)
-		l.blocks = append(l.blocks, newBlock)
+		l.addNewBlock()
 	}
 
 	return nil
 }
 
-func (l *log) newBlock(id int, previousIndex uint64) *logBlock {
-	return &logBlock{
-		Id:          id,
+func (l *log) addNewBlock() *logBlock {
+	var (
+		nextId             = 0
+		prevLastIdx uint64 = 0
+	)
+
+	if len(l.blocks) > 0 {
+		prevLastBlock := l.blocks[len(l.blocks)-1]
+		prevLastBlock.IsLastBlock = false
+
+		nextId = prevLastBlock.Id + 1
+		prevLastIdx = prevLastBlock.lastIdx
+	}
+
+	newBlock := &logBlock{
+		Id:          nextId,
 		Encoder:     l.Encoder,
 		Metrics:     l.Metrics,
-		FileName:    path.Join(l.DataDir, blockFileName(id)),
-		PreviousIdx: previousIndex,
+		FileName:    path.Join(l.DataDir, blockFileName(nextId)),
+		PreviousIdx: prevLastIdx,
+		IsLastBlock: true,
 	}
+
+	l.blocks = append(l.blocks, newBlock)
+
+	return newBlock
 }
 
+// TODO: ensure that all files are read in the proper order by padding block id in the file name and ordering
 func (l *log) LoadBlocksMetadata() error {
 	blockNames, err := util.ListDir(l.DataDir)
 	if err != nil {
 		return fmt.Errorf("listing data dir: %w", err)
 	}
 
-	var previousBlock *logBlock
+	var ids []int
 	for _, fileName := range blockNames {
 		id, err := l.parseBlockIdFromFileName(fileName)
 		if err != nil {
 			return fmt.Errorf("parsing Id: %w", err)
 		}
 
-		previousIdx := uint64(0)
-		if previousBlock != nil {
-			previousIdx = previousBlock.lastIdx
-		}
+		ids = append(ids, id)
+	}
 
-		block := l.newBlock(id, previousIdx)
+	// initial block
+	if len(ids) == 0 {
+		l.addNewBlock()
+		return nil
+	}
+
+	sort.Ints(ids)
+	lastId := ids[len(ids)-1]
+
+	for i := 0; i <= lastId; i++ {
+		block := l.addNewBlock()
 		if err = block.load(); err != nil {
 			return fmt.Errorf("loading block %d: %w", block.Id, err)
 		}
 
-		block.unload()
-
-		l.blocks = append(l.blocks, block)
-		previousBlock = block
-	}
-
-	sort.Slice(l.blocks, func(i, j int) bool {
-		return l.blocks[i].Id < l.blocks[j].Id
-	})
-
-	// initial block
-	if len(l.blocks) == 0 {
-		l.blocks = append(l.blocks, l.newBlock(0, 0))
+		block.UnloadIfNotLast()
 	}
 
 	return nil
@@ -292,8 +306,7 @@ func (l *log) Entries(startIdx uint64, endIdx uint64) ([]pb.Entry, error) {
 			return nil, fmt.Errorf("slicing from block %d [%d:%d]: %w", block.Id, start, end, err)
 		}
 
-		// TODO: hmm...
-		block.unload()
+		block.UnloadIfNotLast()
 
 		result = append(result, entries...)
 	}
@@ -350,6 +363,8 @@ func (l *log) TruncateTo(lastGoodIdx uint64) error {
 		return fmt.Errorf("truncating block to %d: %w", lastGoodIdx, err)
 	}
 
+	block.IsLastBlock = true
+
 	return nil
 }
 
@@ -360,6 +375,7 @@ type logBlock struct {
 	FileName    string
 	Encoder     Encoder
 	Metrics     *Metrics
+	IsLastBlock bool
 
 	file              *os.File
 	firstIdx, lastIdx uint64
@@ -463,8 +479,14 @@ func (lb *logBlock) loadEntries() error {
 	})
 }
 
-func (lb *logBlock) unload() {
+func (lb *logBlock) Unload() {
 	lb.cachedEntries = nil
+}
+
+func (lb *logBlock) UnloadIfNotLast() {
+	if !lb.IsLastBlock {
+		lb.Unload()
+	}
 }
 
 func (lb *logBlock) Entries(startIdx uint64, endIdx uint64) ([]pb.Entry, error) {

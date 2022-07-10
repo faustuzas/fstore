@@ -14,7 +14,7 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 
 export const options = {
     vus: 100,
-    duration: '30s',
+    duration: '5m',
     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.99)', 'count'],
 };
 
@@ -129,4 +129,24 @@ export default function () {
 // iteration_duration.............: avg=4.67s   min=287.23ms med=4.81s max=6.69s   p(95)=6.53s    p(99)=6.63s    p(99.99)=6.69s    count=674
 // iterations.....................: 674     20.413836/s
 // vus............................: 2       min=2       max=100
+// vus_max........................: 100     min=100     max=100
+
+// SCENARIO #6: Running 3-nodes cluster with last raft log block cashing
+// running (0m30.2s), 000/100 VUs, 1959 complete and 0 interrupted iterations
+// checks.........................: 100.00% ✓ 1959      ✗ 0
+// data_received..................: 231 kB  7.7 kB/s
+// data_sent......................: 729 kB  24 kB/s
+// http_req_blocked...............: avg=3.12ms  min=1µs      med=4µs  max=68.94ms p(95)=8.99ms   p(99)=67.22ms  p(99.99)=68.9ms  count=1959
+// http_req_connecting............: avg=2.53ms  min=0s       med=0s   max=62.52ms p(95)=8.53ms   p(99)=56.22ms  p(99.99)=62.43ms count=1959
+// http_req_duration..............: avg=1.52s   min=146.47ms med=1.6s max=2.62s   p(95)=1.8s     p(99)=2.62s    p(99.99)=2.62s   count=1959
+// { expected_response:true }...: avg=1.52s   min=146.47ms med=1.6s max=2.62s   p(95)=1.8s     p(99)=2.62s    p(99.99)=2.62s   count=1959
+// http_req_failed................: 0.00%   ✓ 0         ✗ 1959
+// http_req_receiving.............: avg=98.29µs min=18µs     med=74µs max=8.23ms  p(95)=198.19µs p(99)=369.42µs p(99.99)=7.95ms  count=1959
+// http_req_sending...............: avg=50.15µs min=10µs     med=27µs max=1.56ms  p(95)=128.29µs p(99)=694.52µs p(99.99)=1.52ms  count=1959
+// http_req_tls_handshaking.......: avg=0s      min=0s       med=0s   max=0s      p(95)=0s       p(99)=0s       p(99.99)=0s      count=1959
+// http_req_waiting...............: avg=1.52s   min=146.29ms med=1.6s max=2.62s   p(95)=1.8s     p(99)=2.62s    p(99.99)=2.62s   count=1959
+// http_reqs......................: 1959    64.965471/s
+// iteration_duration.............: avg=1.53s   min=155.88ms med=1.6s max=2.69s   p(95)=1.81s    p(99)=2.68s    p(99.99)=2.69s   count=1959
+// iterations.....................: 1959    64.965471/s
+// vus............................: 100     min=100     max=100
 // vus_max........................: 100     min=100     max=100
