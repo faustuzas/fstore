@@ -170,3 +170,23 @@ export default function () {
 // iterations.....................: 7321    238.951644/s
 // vus............................: 100     min=100      max=100
 // vus_max........................: 100     min=100      max=100
+
+// SCENARIO #7: Running 3-nodes cluster with batched proposes
+// running (0m30.2s), 000/100 VUs, 9353 complete and 0 interrupted iterations
+// checks.........................: 100.00% ✓ 9353       ✗ 0
+// data_received..................: 1.1 MB  37 kB/s
+// data_sent......................: 3.5 MB  115 kB/s
+// http_req_blocked...............: avg=727.65µs min=1µs     med=3µs      max=95.08ms p(95)=5µs      p(99)=25.52ms  p(99.99)=94.73ms count=9353
+// http_req_connecting............: avg=689.11µs min=0s      med=0s       max=87.48ms p(95)=0s       p(99)=23.98ms  p(99.99)=83.83ms count=9353
+// http_req_duration..............: avg=320.84ms min=84.36ms med=304.67ms max=1.39s   p(95)=514.58ms p(99)=962ms    p(99.99)=1.39s   count=9353
+// { expected_response:true }...: avg=320.84ms min=84.36ms med=304.67ms max=1.39s   p(95)=514.58ms p(99)=962ms    p(99.99)=1.39s   count=9353
+// http_req_failed................: 0.00%   ✓ 0          ✗ 9353
+// http_req_receiving.............: avg=67.28µs  min=13µs    med=29µs     max=9.09ms  p(95)=189µs    p(99)=510µs    p(99.99)=7.26ms  count=9353
+// http_req_sending...............: avg=26.58µs  min=6µs     med=14µs     max=4.77ms  p(95)=91µs     p(99)=197.95µs p(99.99)=2.16ms  count=9353
+// http_req_tls_handshaking.......: avg=0s       min=0s      med=0s       max=0s      p(95)=0s       p(99)=0s       p(99.99)=0s      count=9353
+// http_req_waiting...............: avg=320.74ms min=84.33ms med=304.62ms max=1.39s   p(95)=514.44ms p(99)=961.94ms p(99.99)=1.39s   count=9353
+// http_reqs......................: 9353    309.686267/s
+// iteration_duration.............: avg=322.52ms min=84.85ms med=306.43ms max=1.39s   p(95)=515.39ms p(99)=962.49ms p(99.99)=1.39s   count=9353
+// iterations.....................: 9353    309.686267/s
+// vus............................: 100     min=100      max=100
+// vus_max........................: 100     min=100      max=100

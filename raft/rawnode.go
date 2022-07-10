@@ -137,6 +137,19 @@ func (n *rawNode) propose(data []byte) error {
 	})
 }
 
+// propose data to be appended to the clusters Raft log
+func (n *rawNode) proposeBatch(data [][]byte) error {
+	var entries []pb.Entry
+	for _, datum := range data {
+		entries = append(entries, pb.Entry{Data: datum})
+	}
+
+	return n.r.step(pb.Message{
+		Type:    pb.MsgPropose,
+		Entries: entries,
+	})
+}
+
 // step processed the message in the raft state machine
 func (n *rawNode) step(message pb.Message) error {
 	return n.r.step(message)

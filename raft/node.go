@@ -52,7 +52,7 @@ func StartNode(params Params) (Node, error) {
 	n := &node{
 		r: rn,
 
-		proposeCh:  make(chan proposeMsg),
+		proposeCh:  make(chan proposeMsg, 128),
 		progressCh: make(chan Progress),
 		advanceCh:  make(chan struct{}),
 		receiveCh:  make(chan pb.Message),
@@ -207,7 +207,8 @@ func (n *node) run() {
 
 		select {
 		case prop := <-n.proposeCh:
-			prop.resultCh <- n.r.propose(prop.data)
+			n.batchPropose(prop)
+			//prop.resultCh <- n.r.propose(prop.data)
 		case progressCh <- progress:
 			n.r.ackProgress(progress)
 			advanceCh = n.advanceCh
@@ -231,5 +232,25 @@ func (n *node) run() {
 			close(n.doneCh)
 			return
 		}
+	}
+}
+
+func (n *node) batchPropose(firstProp proposeMsg) {
+	proposes := []proposeMsg{firstProp}
+	data := [][]byte{firstProp.data}
+loop:
+	for {
+		select {
+		case prop := <-n.proposeCh:
+			proposes = append(proposes, prop)
+			data = append(data, prop.data)
+		default:
+			break loop
+		}
+	}
+
+	err := n.r.proposeBatch(data)
+	for _, p := range proposes {
+		p.resultCh <- err
 	}
 }
