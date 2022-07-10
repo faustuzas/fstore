@@ -173,7 +173,7 @@ func (n *node) Stop() {
 func (n *node) run() {
 	//defer func() {
 	//	if err := recover(); err != nil {
-	//		debugRecover(n.r.r, err.(error))
+	//		debugRecover(n.r.r, err)
 	//	}
 	//}()
 
@@ -211,6 +211,7 @@ func (n *node) run() {
 			//prop.resultCh <- n.r.propose(prop.data)
 		case progressCh <- progress:
 			n.r.ackProgress(progress)
+			//recordProgress(n.r.r, progress)
 			advanceCh = n.advanceCh
 		case <-advanceCh:
 			n.r.advance(progress)

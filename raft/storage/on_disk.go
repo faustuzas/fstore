@@ -194,6 +194,8 @@ func (l *log) appendEntries(entries ...pb.Entry) error {
 	}
 
 	if block.size > l.MaxBlockSize {
+		block.Unload()
+
 		l.addNewBlock()
 	}
 

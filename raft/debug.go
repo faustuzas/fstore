@@ -15,7 +15,7 @@ type DebugEntry struct {
 
 var debugEntries []DebugEntry
 
-func debugRecover(r *raft, err error) {
+func debugRecover(r *raft, err any) {
 	fmt.Printf("RAFT IS PANICING: %v\n", err)
 	fmt.Printf("Dump can be found in %v\n", dump(r, debugEntries, string(debug.Stack())))
 	os.Exit(1)
