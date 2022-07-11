@@ -3,7 +3,7 @@ package raft
 import (
 	"fmt"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 )
 
 // SoftState is volatile informational state about the node

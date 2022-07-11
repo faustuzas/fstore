@@ -3,8 +3,8 @@ package node
 import (
 	"context"
 	"encoding/json"
-	"github.com/faustuzas/distributed-kv/raft"
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	"github.com/faustuzas/fstore/raft"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 )
 
 func (n *DBNode) runRaftProcess() {

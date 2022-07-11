@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 )

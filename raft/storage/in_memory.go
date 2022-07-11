@@ -3,7 +3,7 @@ package storage
 import (
 	"sync"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 )
 
 // hints to compiler what interfaces have to be implemented

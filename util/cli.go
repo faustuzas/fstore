@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/faustuzas/distributed-kv/logging"
+	"github.com/faustuzas/fstore/logging"
 )
 
 func PressEnterToExit() {

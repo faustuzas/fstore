@@ -1,4 +1,4 @@
-module github.com/faustuzas/distributed-kv
+module github.com/faustuzas/fstore
 
 go 1.18
 

@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/faustuzas/distributed-kv/storage"
+	"github.com/faustuzas/fstore/storage"
 	"github.com/gorilla/mux"
 )
 

@@ -1,7 +1,7 @@
 package raft
 
 import (
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 )
 
 // unstableLog holds log entries which are not yet persisted to disk. After giving the entries to user

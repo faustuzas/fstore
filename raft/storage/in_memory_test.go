@@ -3,7 +3,7 @@ package storage
 import (
 	"testing"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 )
 
 func TestInMemoryStateStorage(t *testing.T) {

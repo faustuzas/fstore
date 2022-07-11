@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/faustuzas/distributed-kv/logging"
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
-	"github.com/faustuzas/distributed-kv/raft/storage"
-	"github.com/faustuzas/distributed-kv/util"
+	"github.com/faustuzas/fstore/logging"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
+	"github.com/faustuzas/fstore/raft/storage"
+	"github.com/faustuzas/fstore/util"
 )
 
 var (

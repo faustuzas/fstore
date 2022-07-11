@@ -10,8 +10,8 @@ import (
 	"sort"
 	"sync"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
-	"github.com/faustuzas/distributed-kv/util"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
+	"github.com/faustuzas/fstore/util"
 	"github.com/gogo/protobuf/jsonpb"
 )
 

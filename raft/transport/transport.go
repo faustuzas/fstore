@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/faustuzas/distributed-kv/logging"
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	"github.com/faustuzas/fstore/logging"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 )
 
 const (

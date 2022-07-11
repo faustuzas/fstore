@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/faustuzas/distributed-kv/config"
-	"github.com/faustuzas/distributed-kv/logging"
-	"github.com/faustuzas/distributed-kv/raft"
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
-	raftstorage "github.com/faustuzas/distributed-kv/raft/storage"
-	"github.com/faustuzas/distributed-kv/raft/transport"
-	"github.com/faustuzas/distributed-kv/storage"
+	"github.com/faustuzas/fstore/config"
+	"github.com/faustuzas/fstore/logging"
+	"github.com/faustuzas/fstore/raft"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
+	raftstorage "github.com/faustuzas/fstore/raft/storage"
+	"github.com/faustuzas/fstore/raft/transport"
+	"github.com/faustuzas/fstore/storage"
 	"github.com/gorilla/mux"
 )
 

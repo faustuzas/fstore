@@ -7,8 +7,8 @@ import (
 	"path"
 	"testing"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
-	"github.com/faustuzas/distributed-kv/util"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
+	"github.com/faustuzas/fstore/util"
 	"github.com/stretchr/testify/require"
 )
 

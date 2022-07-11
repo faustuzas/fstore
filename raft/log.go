@@ -2,10 +2,10 @@ package raft
 
 import (
 	"fmt"
-	"github.com/faustuzas/distributed-kv/raft/storage"
+	"github.com/faustuzas/fstore/raft/storage"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
-	"github.com/faustuzas/distributed-kv/util"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
+	"github.com/faustuzas/fstore/util"
 )
 
 // raftLog provides a unified interface to access and manage both stable and unstable log entries

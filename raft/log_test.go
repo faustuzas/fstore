@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 	"github.com/stretchr/testify/require"
 )
 

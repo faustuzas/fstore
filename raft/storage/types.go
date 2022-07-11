@@ -1,6 +1,6 @@
 package storage
 
-import pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+import pb "github.com/faustuzas/fstore/raft/raftpb"
 
 // StateStorage provides a way to access last persisted state of the node
 type StateStorage interface {

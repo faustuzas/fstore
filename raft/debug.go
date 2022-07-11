@@ -3,7 +3,7 @@ package raft
 import (
 	"encoding/json"
 	"fmt"
-	pb "github.com/faustuzas/distributed-kv/raft/raftpb"
+	pb "github.com/faustuzas/fstore/raft/raftpb"
 	"os"
 	"runtime/debug"
 )
